@@ -1,0 +1,115 @@
+@font-face {
+  font-family: "Funnel Display";
+  src: url("./assets/fonts/FunnelDisplay-VariableFont_wght.ttf")
+    format(truetype);
+  font-weight: normal;
+  font-style: normal;
+}
+
+:root {
+  font-family:
+    "Funnel Display", system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  color-scheme: light;
+
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem; /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px */
+  --space-5: 1.25rem; /* 20px */
+  --space-6: 1.5rem; /* 24px */
+  --space-8: 2rem; /* 32px */
+  --space-10: 2.5rem; /* 40px */
+  --space-12: 3rem; /* 48px */
+  --space-16: 4rem; /* 64px */
+
+  --fs-xs: 0.75rem; /* 12px */
+  --fs-sm: 0.875rem; /* 14px */
+  --fs-base: 1rem; /* 16px */
+  --fs-md: 1.125rem; /* 18px */
+  --fs-lg: 1.25rem; /* 20px */
+  --fs-xl: 1.5rem; /* 24px */
+  --fs-2xl: 1.875rem; /* 30px */
+  --fs-3xl: 2.25rem; /* 36px */
+  --fs-4xl: 3rem; /* 48px */
+
+  --primary-100: hsl(133, 40%, 95%);
+  --primary-200: hsl(133, 45%, 85%);
+  --primary-300: hsl(133, 50%, 70%);
+  --primary-400: hsl(133, 55%, 55%);
+  --primary-500: hsl(133, 60%, 40%); /* base */
+  --primary-600: hsl(133, 65%, 32%);
+  --primary-700: hsl(133, 70%, 25%);
+  --primary-800: hsl(133, 75%, 18%);
+  --primary-900: hsl(133, 80%, 12%);
+
+  --secondary-100: hsl(210, 22%, 92%);
+  --secondary-200: hsl(210, 22%, 82%);
+  --secondary-300: hsl(210, 22%, 65%);
+  --secondary-400: hsl(210, 22%, 45%);
+  --secondary-500: hsl(210, 22%, 23%); /* base */
+  --secondary-600: hsl(210, 25%, 18%);
+  --secondary-700: hsl(210, 28%, 14%);
+  --secondary-800: hsl(210, 30%, 10%);
+  --secondary-900: hsl(210, 35%, 7%);
+
+  --bg-dark: hsl(130, 37%, 95%);
+  --bg: hsl(130, 37%, 97%);
+  --bg-light: hsl(130, 30%, 98%);
+
+  --text: hsl(0, 0%, 15%);
+  --text-muted: hsl(0, 0%, 45%);
+  --border: hsl(0, 0%, 85%);
+
+  --success: hsl(150, 60%, 40%);
+  --success-bg: hsl(150, 60%, 95%);
+
+  --warning: hsl(38, 90%, 50%);
+  --warning-bg: hsl(38, 90%, 95%);
+
+  --error: hsl(0, 70%, 50%);
+  --error-bg: hsl(0, 70%, 96%);
+
+  --info: hsl(210, 90%, 55%);
+  --info-bg: hsl(210, 90%, 96%);
+
+  --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.05);
+  --shadow-md: 0 4px 8px hsl(0 0% 0% / 0.08);
+  --shadow-lg: 0 8px 16px hsl(0 0% 0% / 0.12);
+  --shadow-xl: 0 12px 24px hsl(0 0% 0% / 0.18);
+  --shadow-focus: 0 0 0 3px hsl(133 60% 40% / 0.35);
+}
+
+.dark {
+  color-scheme: dark;
+  --bg-dark: hsl(0, 0%, 5%);
+  --bg: hsl(0, 0%, 10%);
+  --bg-light: hsl(0, 0%, 15%);
+
+  --text: hsl(0, 0%, 85%);
+  --text-muted: hsl(0, 0%, 65%);
+  --border: hsl(0, 0%, 25%);
+
+  --success-bg: hsl(150, 60%, 15%);
+  --warning-bg: hsl(38, 90%, 15%);
+  --error-bg: hsl(0, 70%, 18%);
+  --info-bg: hsl(210, 90%, 18%);
+
+  --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.4);
+  --shadow-md: 0 4px 8px hsl(0 0% 0% / 0.5);
+  --shadow-lg: 0 8px 16px hsl(0 0% 0% / 0.6);
+  --shadow-xl: 0 12px 24px hsl(0 0% 0% / 0.7);
+  --shadow-focus: 0 0 0 3px hsl(133 60% 45% / 0.45);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  display: flex;
+  background-color: var(--bg-dark);
+  color: var(--text);
+}
