@@ -22,6 +22,13 @@ import { RouterView } from "vue-router";
   flex-direction: column;
 }
 
+#subviews-container {
+  overflow: auto;
+  overflow-x: hidden;
+  padding: var(--space-4) var(--space-8);
+  width: 100%;
+}
+
 @media (min-width: 768px) {
   #root-layout {
     flex-direction: row;

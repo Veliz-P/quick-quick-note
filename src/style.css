@@ -62,6 +62,9 @@
   --secondary-800: hsl(210, 30%, 10%);
   --secondary-900: hsl(210, 35%, 7%);
 
+  --light: hsl(0, 0%, 95%);
+  --dark: hsl(0, 0%, 5%);
+
   --bg-dark: hsl(130, 37%, 95%);
   --bg: hsl(130, 37%, 97%);
   --bg-light: hsl(130, 30%, 98%);
