@@ -98,9 +98,9 @@
 
 .dark {
   color-scheme: dark;
-  --bg-dark: hsl(0, 0%, 5%);
-  --bg: hsl(0, 0%, 10%);
-  --bg-light: hsl(0, 0%, 15%);
+  --bg-dark: hsl(0, 0%, 8%);
+  --bg: hsl(0, 0%, 13%);
+  --bg-light: hsl(0, 0%, 18%);
 
   --text: hsl(0, 0%, 85%);
   --text-muted: hsl(0, 0%, 65%);
