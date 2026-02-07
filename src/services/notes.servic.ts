@@ -110,7 +110,7 @@ export class NoteService {
       createdAt: note.createdAt,
       expiresAt: note.expiresAt,
       originalCollection: collection,
-      originalId: note.id,
+      originalId: note.id as number,
       deletedAt: new Date().toISOString(),
     };
 
@@ -149,7 +149,7 @@ export class NoteService {
       [defaultStores.GARBAGE_NOTES, String(note.originalCollection)],
       "readwrite",
     );
-    await tx.objectStore(defaultStores.GARBAGE_NOTES).delete(note.id);
+    await tx.objectStore(defaultStores.GARBAGE_NOTES).delete(note.id as number);
     const formatedNote: Note = {
       id: note.originalId,
       title: note.title,
@@ -164,8 +164,23 @@ export class NoteService {
       if (!foundCollection) {
         // when collection not found, redirect to default notes collection
         await tx.objectStore(defaultStores.DEFAULT_NOTES).add(formatedNote);
+        await tx.done;
         return;
       }
+    }
+    // if note is expired, add it to default notes
+    if (
+      typeof originalCollection === "string" &&
+      originalCollection === defaultStores.TEMPORARY_NOTES &&
+      note.expiresAt &&
+      new Date(note.expiresAt).getTime() < new Date().getTime()
+    ) {
+      const newNote: Partial<Note> = JSON.parse(JSON.stringify(formatedNote));
+      delete newNote.id;
+      newNote.expiresAt = "";
+      await tx.objectStore(defaultStores.DEFAULT_NOTES).add(newNote);
+      await tx.done;
+      return;
     }
     await tx.objectStore(String(originalCollection)).add(formatedNote);
     await tx.done;

@@ -7,6 +7,7 @@ export const defaultStores = {
   COLLECTION_DETAILS: "collection_details",
   DEFAULT_NOTES: "default_notes",
   GARBAGE_NOTES: "garbage_notes",
+  TEMPORARY_NOTES: "temporary_notes",
 } as const;
 
 export type DefaultStores = (typeof defaultStores)[keyof typeof defaultStores];
@@ -39,7 +40,15 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
         autoIncrement: true,
       });
       store.createIndex("createdAt", "createdAt");
-      store.createIndex("originalCollection", "originalCollection");
+    }
+
+    if (!db.objectStoreNames.contains(defaultStores.TEMPORARY_NOTES)) {
+      const store = db.createObjectStore(defaultStores.TEMPORARY_NOTES, {
+        keyPath: "id",
+        autoIncrement: true,
+      });
+      store.createIndex("createdAt", "createdAt");
+      store.createIndex("expiresAt", "expiresAt");
     }
   },
   blocked() {

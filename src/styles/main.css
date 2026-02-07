@@ -1,6 +1,6 @@
 @font-face {
   font-family: "Funnel Display";
-  src: url("./assets/fonts/FunnelDisplay-VariableFont_wght.ttf")
+  src: url("../assets/fonts/FunnelDisplay-VariableFont_wght.ttf")
     format(truetype);
   font-weight: normal;
   font-style: normal;
@@ -146,4 +146,43 @@ a {
 button,
 a {
   cursor: pointer;
+}
+
+input,
+textarea {
+  border: 2px solid var(--border);
+  border-radius: var(--rounded-md);
+  font-family: inherit;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--fs-base);
+  background-color: transparent;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s ease;
+}
+
+input:focus,
+textarea:focus {
+  border-color: var(--secondary-300);
+  accent-color: var(--secondary-300);
+}
+
+input[type="checkbox"] {
+  accent-color: var(--secondary-400);
+}
+
+input:focus:invalid,
+textarea:focus:invalid {
+  border-color: var(--error);
+}
+
+textarea {
+  resize: none;
+  min-height: var(--space-8);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
 }

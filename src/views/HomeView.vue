@@ -6,7 +6,12 @@
     <section class="home-section">
       <h2>Acciones rápidas</h2>
       <div class="quick-action-btns">
-        <button class="btn-primary"><FilePlusCorner /> Crear nota</button>
+        <button
+          class="btn-primary"
+          @click="openNoteForm('create', false, defaultStores.DEFAULT_NOTES)"
+        >
+          <FilePlusCorner /> Crear nota
+        </button>
         <button class="btn-secondary"><FolderPlus /> Crear colección</button>
       </div>
     </section>
@@ -33,7 +38,10 @@
     <section class="home-section">
       <h2 id="temporary-notes-h2">Notas temporales</h2>
       <p>Cree notas únicas que se desvanecerán cuando usted lo decida.</p>
-      <button class="btn-secondary">
+      <button
+        class="btn-secondary"
+        @click="openNoteForm('create', true, defaultStores.TEMPORARY_NOTES)"
+      >
         <FilePlusCorner /> Crear nota temporal
       </button>
       <div class="notes-grid">
@@ -45,9 +53,38 @@
       </div>
     </section>
   </div>
+  <div v-if="visibleNoteForm" id="note-form-container">
+    <NoteForm
+      @close-form="visibleNoteForm = false"
+      :form-mode="formMode"
+      :is-temporary="isTemporary"
+      :collection="collection"
+    />
+  </div>
 </template>
 <script setup lang="ts">
+import { ref } from "vue";
 import { FilePlusCorner, FolderPlus } from "lucide-vue-next";
+import type { FormMode } from "../types/form.mode";
+import type { DefaultStores } from "../db/idb";
+import { defaultStores } from "../db/idb";
+import NoteForm from "../components/NoteForm.vue";
+
+const visibleNoteForm = ref(false);
+let formMode: FormMode = "create";
+let isTemporary = false;
+let collection: number | DefaultStores = defaultStores.DEFAULT_NOTES;
+
+function openNoteForm(
+  mode: FormMode,
+  isTemporaryNote: boolean,
+  noteCollection: number | DefaultStores,
+) {
+  visibleNoteForm.value = true;
+  formMode = mode;
+  isTemporary = isTemporaryNote;
+  collection = noteCollection;
+}
 </script>
 <style scoped>
 h1 {
@@ -79,51 +116,6 @@ h2 {
   align-items: center;
   justify-items: center;
   flex-wrap: wrap;
-}
-
-.btn-primary {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-4);
-  background-color: var(--primary-500);
-  color: var(--light);
-  border: 2px solid var(--primary-500);
-  border-radius: var(--rounded-md);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  transition: background-color 0.2s ease;
-}
-
-.btn-primary:hover {
-  background-color: var(--primary-600);
-}
-
-.btn-secondary {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
-  padding: var(--space-1) var(--space-4);
-  border-radius: var(--rounded-md);
-  border: 2px solid var(--secondary-300);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  transition: background-color 0.2s ease;
-  color: var(--secondary-400);
-}
-
-.dark .btn-secondary {
-  color: var(--secondary-200);
-}
-
-.dark .btn-secondary:hover {
-  background-color: var(--secondary-500);
-}
-
-.btn-secondary:hover {
-  background-color: var(--secondary-100);
 }
 
 .home-section {
@@ -160,6 +152,15 @@ h2 {
 }
 .notes-grid div {
   background-color: aquamarine;
+}
+
+#note-form-container {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
 @media (min-width: 768px) {

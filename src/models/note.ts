@@ -1,7 +1,7 @@
 import type { DefaultStores } from "../db/idb";
 
 export interface Note {
-  id: number;
+  id?: number;
   title: string;
   description?: string;
   createdAt: string;

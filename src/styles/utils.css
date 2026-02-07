@@ -1,0 +1,12 @@
+.required::after {
+  content: "*";
+  color: red;
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.invalid {
+  border-color: var(--error);
+}
