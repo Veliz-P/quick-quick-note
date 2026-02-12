@@ -44,12 +44,13 @@
       >
         <FilePlusCorner /> Crear nota temporal
       </button>
-      <div class="notes-grid">
-        <div>Note 1</div>
-        <div>Note 2</div>
-        <div>Note 3</div>
-        <div>Note 4</div>
-        <div>note 5</div>
+      <div id="temporary-notes-container">
+        <NoteBoard
+          @open-form="
+            openNoteForm('edit', true, defaultStores.TEMPORARY_NOTES, $event)
+          "
+          :collection="collection"
+        />
       </div>
     </section>
   </div>
@@ -59,6 +60,7 @@
       :form-mode="formMode"
       :is-temporary="isTemporary"
       :collection="collection"
+      :note="note"
     />
   </div>
 </template>
@@ -66,24 +68,29 @@
 import { ref } from "vue";
 import { FilePlusCorner, FolderPlus } from "lucide-vue-next";
 import type { FormMode } from "../types/form.mode";
+import NoteBoard from "../components/NoteBoard.vue";
 import type { DefaultStores } from "../db/idb";
 import { defaultStores } from "../db/idb";
 import NoteForm from "../components/NoteForm.vue";
+import type { Note } from "../models/note";
 
 const visibleNoteForm = ref(false);
 let formMode: FormMode = "create";
 let isTemporary = false;
-let collection: number | DefaultStores = defaultStores.DEFAULT_NOTES;
+let collection: number | DefaultStores = defaultStores.TEMPORARY_NOTES;
+let note: Note | null = null;
 
 function openNoteForm(
   mode: FormMode,
   isTemporaryNote: boolean,
   noteCollection: number | DefaultStores,
+  selectedNote: Note | null = null,
 ) {
   visibleNoteForm.value = true;
   formMode = mode;
   isTemporary = isTemporaryNote;
   collection = noteCollection;
+  note = selectedNote;
 }
 </script>
 <style scoped>
@@ -144,14 +151,8 @@ h2 {
   list-style: none;
 }
 
-.notes-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-4);
-  margin-top: var(--space-6);
-}
-.notes-grid div {
-  background-color: aquamarine;
+#temporary-notes-container {
+  margin-top: var(--space-8);
 }
 
 #note-form-container {
@@ -161,15 +162,12 @@ h2 {
   justify-content: center;
   align-items: center;
   background-color: rgba(0, 0, 0, 0.5);
+  z-index: 2;
 }
 
 @media (min-width: 768px) {
   #recent-actions-container {
     max-width: 650px;
-  }
-  .notes-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--space-8);
   }
 }
 </style>

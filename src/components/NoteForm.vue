@@ -1,7 +1,7 @@
 <template>
   <div class="wrapper" :style="{ backgroundColor: wrapperColor }">
-    <button id="close-form-btn">
-      <X :size="20" :stroke-width="2.5" @click="emit('closeForm')" />
+    <button id="close-form-btn" @click="emit('closeForm')">
+      <X :size="20" :stroke-width="2.5" />
     </button>
     <div class="card">
       <form @submit.prevent="submitForm">
@@ -16,7 +16,7 @@
             type="text"
             v-model="note.title"
             minlength="1"
-            maxlenght="100"
+            maxlength="100"
           />
         </div>
         <div>
@@ -80,7 +80,7 @@ import { ExpirationNoteService } from "../services/expiration.note.servic";
 import type { FormMode } from "../types/form.mode";
 import type { Note } from "../models/note";
 import { NoteService } from "../services/notes.servic";
-import { buildDate } from "../utils/date";
+import { buildDate, getDate, formatHour } from "../utils/date";
 import type { DefaultStores } from "../db/idb";
 import { defaultStores } from "../db/idb";
 
@@ -108,12 +108,14 @@ interface Props {
   isTemporary?: boolean;
   formMode?: FormMode;
   collection?: number | DefaultStores;
+  note?: Note | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isTemporary: false,
   formMode: "create",
   collection: defaultStores.DEFAULT_NOTES,
+  note: null,
 });
 
 interface Emits {
@@ -137,8 +139,9 @@ function generateExpirationDate(): string {
   let date: Date | null = null;
   if (!expirationDate.value && !expirationTime.value) {
     date = ExpirationNoteService.getDefaultExpiration();
+  } else {
+    date = buildDate(expirationDate.value, expirationTime.value);
   }
-  date = buildDate(expirationDate.value, expirationTime.value);
   return date.toISOString();
 }
 
@@ -154,7 +157,8 @@ async function submitForm() {
         result = await NoteService.createNote(newNote, props.collection);
         break;
       case "edit":
-        result = await NoteService.updateNote(note);
+        const updateNote = { ...note };
+        result = await NoteService.updateNote(updateNote, props.collection);
         break;
     }
     console.log("success", result);
@@ -163,9 +167,26 @@ async function submitForm() {
   }
 }
 
+function preFillForm() {
+  if (!props.note) return;
+  note.id = props.note.id;
+  note.title = props.note.title;
+  note.description = props.note.description;
+  note.createdAt = props.note.createdAt;
+
+  if (props.isTemporary && props.note.expiresAt) {
+    note.expiresAt = props.note.expiresAt;
+    const date = new Date(props.note.expiresAt);
+    expirationDate.value = getDate(date) || "";
+    expirationTime.value = formatHour(date.toISOString()) || "";
+  }
+
+  includeDescription.value = note.description !== "";
+}
+
 onMounted(() => {
   wrapperColor.value = ColorService.getRandomColor();
-  console.log(props.collection);
+  preFillForm();
 });
 </script>
 <style scoped>

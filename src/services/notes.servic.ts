@@ -42,6 +42,7 @@ export class NoteService {
     )
       throw new Error("Description invalid, must be between 5 and 1000 chars");
     const db = await dbPromise;
+    console.log(note);
     if (collection && typeof collection === "number") {
       const foundCollection = await CollectionService.getCollection(collection);
       if (!foundCollection) throw new Error("Collection not found");
