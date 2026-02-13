@@ -83,6 +83,8 @@ import { NoteService } from "../services/notes.servic";
 import { buildDate, getDate, formatHour } from "../utils/date";
 import type { DefaultStores } from "../db/idb";
 import { defaultStores } from "../db/idb";
+import { useToastStore } from "../stores/useToastStore";
+const { showToast } = useToastStore();
 
 import {
   Paperclip,
@@ -161,9 +163,16 @@ async function submitForm() {
         result = await NoteService.updateNote(updateNote, props.collection);
         break;
     }
-    console.log("success", result);
+    if (result.id) {
+      const message =
+        props.formMode === "create"
+          ? "Nota creada exitosamente"
+          : "Nota actualizada exitosamente";
+      showToast("success", message);
+    }
   } catch (error) {
     console.error(error);
+    showToast("error", "Ocurrió un error al guardar la nota");
   }
 }
 

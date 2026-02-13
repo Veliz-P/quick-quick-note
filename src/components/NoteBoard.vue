@@ -84,6 +84,8 @@ import {
   Trash2,
   NotepadText,
 } from "lucide-vue-next";
+import { useToastStore } from "../stores/useToastStore";
+const { showToast } = useToastStore();
 
 interface Props {
   collection?: number | DefaultStores;
@@ -150,24 +152,37 @@ function openNoteForm(note: Note) {
 }
 
 async function duplicateNote(note: Note) {
-  let { id, ...newNote } = note;
-  const result = await NoteService.createNote(newNote, props.collection);
-  console.log(result);
-  toggleExtraOptions();
-  await retrieveNotes();
+  try {
+    let { id, ...newNote } = note;
+    const result = await NoteService.createNote(newNote, props.collection);
+    if (result.id) {
+      showToast("success", "Nota duplicada exitosamente");
+    }
+    toggleExtraOptions();
+    await retrieveNotes();
+  } catch (error) {
+    console.error(error);
+    showToast("error", "Ocurrió un error al duplicar la nota");
+  }
 }
 
 async function deleteNote() {
-  const deleteNote = { ...selectedNote.value };
-  if (!deleteNote || !deleteNote.id)
-    throw new Error("No note selected for deletion");
-  if (!deletePermanently.value) {
-    await NoteService.softDeleteNote(deleteNote.id, props.collection);
-  } else {
-    // TODO: permanent delete implementation
+  try {
+    const deleteNote = { ...selectedNote.value };
+    if (!deleteNote || !deleteNote.id)
+      throw new Error("No note selected for deletion");
+    if (!deletePermanently.value) {
+      await NoteService.softDeleteNote(deleteNote.id, props.collection);
+      showToast("success", "Nota borrada exitosamente");
+    } else {
+      // TODO: permanent delete implementation
+    }
+    toggleExtraOptions();
+    await retrieveNotes();
+  } catch (error) {
+    console.error(error);
+    showToast("error", "Ocurrió un error al borrar la nota");
   }
-  toggleExtraOptions();
-  await retrieveNotes();
 }
 
 const now = ref(new Date());

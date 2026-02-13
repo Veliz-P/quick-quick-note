@@ -62,7 +62,7 @@
   --secondary-800: hsl(210, 30%, 10%);
   --secondary-900: hsl(210, 35%, 7%);
 
-  --light: hsl(0, 0%, 95%);
+  --light: hsl(0, 0%, 97%);
   --dark: hsl(0, 0%, 5%);
 
   --bg-dark: hsl(130, 37%, 95%);
@@ -78,16 +78,12 @@
   --sidebar-border: hsl(0, 0%, 55%);
 
   --success: hsl(150, 60%, 40%);
-  --success-bg: hsl(150, 60%, 95%);
 
   --warning: hsl(38, 90%, 50%);
-  --warning-bg: hsl(38, 90%, 95%);
 
   --error: hsl(0, 70%, 50%);
-  --error-bg: hsl(0, 70%, 96%);
 
   --info: hsl(210, 90%, 55%);
-  --info-bg: hsl(210, 90%, 96%);
 
   --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.05);
   --shadow-md: 0 4px 8px hsl(0 0% 0% / 0.08);
@@ -105,11 +101,6 @@
   --text: hsl(0, 0%, 85%);
   --text-muted: hsl(0, 0%, 65%);
   --border: hsl(0, 0%, 25%);
-
-  --success-bg: hsl(150, 60%, 15%);
-  --warning-bg: hsl(38, 90%, 15%);
-  --error-bg: hsl(0, 70%, 18%);
-  --info-bg: hsl(210, 90%, 18%);
 
   --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.4);
   --shadow-md: 0 4px 8px hsl(0 0% 0% / 0.5);
