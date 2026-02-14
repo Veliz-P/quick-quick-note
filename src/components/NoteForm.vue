@@ -105,6 +105,7 @@ const expirationDate: Ref<string> = ref("");
 const expirationTime: Ref<string> = ref("");
 const includeDescription = ref(true);
 const wrapperColor = ref("");
+const formMode = ref<FormMode>("create");
 
 interface Props {
   isTemporary?: boolean;
@@ -135,6 +136,7 @@ function clearForm() {
   includeDescription.value = true;
   expirationDate.value = "";
   expirationTime.value = "";
+  formMode.value = "create";
 }
 
 function generateExpirationDate(): string {
@@ -153,7 +155,7 @@ async function submitForm() {
     note.expiresAt = generateExpirationDate();
   }
   try {
-    switch (props.formMode) {
+    switch (formMode.value) {
       case "create":
         const { id, ...newNote } = note;
         result = await NoteService.createNote(newNote, props.collection);
@@ -195,6 +197,7 @@ function preFillForm() {
 
 onMounted(() => {
   wrapperColor.value = ColorService.getRandomColor();
+  formMode.value = props.formMode || "create";
   preFillForm();
 });
 </script>

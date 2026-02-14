@@ -11,14 +11,21 @@
   <div id="toast-container" v-show="showingToast">
     <ToastNotification :message="toastMessage" :type="toastType" />
   </div>
+
+  <div id="confirmation-dialog-container" v-show="isOpen">
+    <ConfirmationPopup />
+  </div>
 </template>
 
 <script setup lang="ts">
 import Sidebar from "../components/Sidebar.vue";
 import ToastNotification from "../components/ToastNotification.vue";
+import ConfirmationPopup from "../components/ConfirmationPopup.vue";
 import { RouterView } from "vue-router";
 import { useToastStore } from "../stores/useToastStore";
 import { storeToRefs } from "pinia";
+import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
+const { isOpen } = storeToRefs(useConfirmationDialogStore());
 
 const { toastMessage, toastType, showingToast } = storeToRefs(useToastStore());
 </script>
@@ -47,6 +54,15 @@ const { toastMessage, toastType, showingToast } = storeToRefs(useToastStore());
   border-radius: var(--rounded-3xl);
   width: 100%;
   max-width: 75%;
+}
+
+#confirmation-dialog-container {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
 @media (min-width: 768px) {

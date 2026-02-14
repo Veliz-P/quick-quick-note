@@ -33,19 +33,20 @@
           }}
         </div>
         <div
+          @click.stop=""
           v-if="
             visibleExtraOptions && selectedNote && selectedNote.id === note.id
           "
           class="extra-options"
         >
           <ul>
-            <li @click.stop="duplicateNote(note)">
+            <li @click="duplicateNote(note)">
               <button><Copy :size="20" /> Duplicar</button>
             </li>
             <li>
               <button><MoveUpRight :size="20" /> Mover a</button>
             </li>
-            <li @click.stop="deleteNote()" class="delete-item">
+            <li @click="deleteNote()" class="delete-item">
               <button><Trash2 :size="20" /> Borrar</button>
             </li>
             <li>
@@ -86,6 +87,17 @@ import {
 } from "lucide-vue-next";
 import { useToastStore } from "../stores/useToastStore";
 const { showToast } = useToastStore();
+
+import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
+import type { ConfirmationDialogOptions } from "../types/confirmation.options";
+const { confirm } = useConfirmationDialogStore();
+
+const permanentDeleteOpts: ConfirmationDialogOptions = {
+  question: "¿Estás seguro de que quieres borrar esta nota?",
+  description: "Esta acción no se puede deshacer.",
+  confirmText: "Sí, borrar permanentemente",
+  cancelText: "No, cancelar",
+};
 
 interface Props {
   collection?: number | DefaultStores;
@@ -173,9 +185,12 @@ async function deleteNote() {
       throw new Error("No note selected for deletion");
     if (!deletePermanently.value) {
       await NoteService.softDeleteNote(deleteNote.id, props.collection);
-      showToast("success", "Nota borrada exitosamente");
+      showToast("success", "Nota movida a papelera");
     } else {
-      // TODO: permanent delete implementation
+      const ok = await confirm(permanentDeleteOpts);
+      if (!ok) return;
+      await NoteService.deleteNote(deleteNote.id, props.collection);
+      showToast("success", "Nota borrada permanentemente");
     }
     toggleExtraOptions();
     await retrieveNotes();
@@ -374,6 +389,11 @@ onBeforeUnmount(() => {
   background-color: var(--primary-200);
   padding: var(--space-4);
   border-radius: var(--rounded-full);
+}
+
+.dark .empty-state-icon {
+  color: var(--primary-300);
+  background-color: var(--primary-600);
 }
 
 .empty-state h3 {

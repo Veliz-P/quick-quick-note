@@ -153,6 +153,7 @@ h2 {
 
 #temporary-notes-container {
   margin-top: var(--space-8);
+  margin-bottom: var(--space-16);
 }
 
 #note-form-container {
