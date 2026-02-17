@@ -50,6 +50,7 @@
             openNoteForm('edit', true, defaultStores.TEMPORARY_NOTES, $event)
           "
           :collection="collection"
+          :should-reload="shouldReloadNotes"
         />
       </div>
     </section>
@@ -57,6 +58,7 @@
   <div v-if="visibleNoteForm" id="note-form-container">
     <NoteForm
       @close-form="visibleNoteForm = false"
+      @should-reload="shouldReloadNotes = true"
       :form-mode="formMode"
       :is-temporary="isTemporary"
       :collection="collection"
@@ -65,7 +67,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { FilePlusCorner, FolderPlus } from "lucide-vue-next";
 import type { FormMode } from "../types/form.mode";
 import NoteBoard from "../components/NoteBoard.vue";
@@ -79,6 +81,18 @@ let formMode: FormMode = "create";
 let isTemporary = false;
 let collection: number | DefaultStores = defaultStores.TEMPORARY_NOTES;
 let note: Note | null = null;
+let shouldReloadNotes = ref(false);
+
+watch(
+  () => shouldReloadNotes.value,
+  (newVal) => {
+    if (newVal) {
+      setTimeout(() => {
+        shouldReloadNotes.value = false;
+      }, 200);
+    }
+  },
+);
 
 function openNoteForm(
   mode: FormMode,

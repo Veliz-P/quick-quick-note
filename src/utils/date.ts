@@ -1,9 +1,9 @@
 export function buildDate(date?: string, time?: string): Date {
   if (!date) {
-    date = getDate(new Date());
+    date = getOnlyDate(new Date());
   }
   if (!time) {
-    time = getTime(new Date());
+    time = getOnlyTime(new Date());
   }
   let [year, month, day] = date?.split("-") || [];
   let [hour, minute, second] = time?.split(":") || [];
@@ -17,11 +17,11 @@ export function buildDate(date?: string, time?: string): Date {
   );
 }
 
-export function getDate(date: Date) {
+export function getOnlyDate(date: Date) {
   return date.toLocaleDateString("sv-SE");
 }
 
-export function getTime(date: Date) {
+export function getOnlyTime(date: Date) {
   return date.toLocaleTimeString();
 }
 

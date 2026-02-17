@@ -62,6 +62,12 @@
               <input v-model="expirationTime" type="time" />
             </div>
           </div>
+          <div
+            class="date-error-message"
+            v-if="invalidDate && invalidDateMessage"
+          >
+            {{ invalidDateMessage }}
+          </div>
         </div>
         <div id="btn-submit-container">
           <button class="btn-primary" type="submit"><Save /> Guardar</button>
@@ -74,13 +80,13 @@
   </div>
 </template>
 <script setup lang="ts">
-import { reactive, ref, onMounted, type Ref } from "vue";
+import { reactive, ref, onMounted, watch, type Ref } from "vue";
 import { ColorService } from "../services/colors.servic";
 import { ExpirationNoteService } from "../services/expiration.note.servic";
 import type { FormMode } from "../types/form.mode";
 import type { Note } from "../models/note";
 import { NoteService } from "../services/notes.servic";
-import { buildDate, getDate, formatHour } from "../utils/date";
+import { buildDate, getOnlyDate, formatHour } from "../utils/date";
 import type { DefaultStores } from "../db/idb";
 import { defaultStores } from "../db/idb";
 import { useToastStore } from "../stores/useToastStore";
@@ -103,9 +109,11 @@ const note: Note = reactive({
 });
 const expirationDate: Ref<string> = ref("");
 const expirationTime: Ref<string> = ref("");
-const includeDescription = ref(true);
+const includeDescription = ref(false);
 const wrapperColor = ref("");
 const formMode = ref<FormMode>("create");
+const invalidDate = ref(false);
+const invalidDateMessage = ref("");
 
 interface Props {
   isTemporary?: boolean;
@@ -123,6 +131,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 interface Emits {
   (e: "closeForm"): void;
+  (e: "shouldReload"): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -139,6 +148,40 @@ function clearForm() {
   formMode.value = "create";
 }
 
+watch(
+  [() => expirationDate.value, () => expirationTime.value],
+  ([date, time]) => {
+    const currentDate = new Date();
+    const selectedDateTime = buildDate(date, time);
+
+    if (date && !time) {
+      const normalizedSelectedDate = new Date(
+        getOnlyDate(selectedDateTime) || "",
+      );
+      const normalizedCurrentDate = new Date(getOnlyDate(currentDate) || "");
+
+      if (normalizedSelectedDate.getTime() < normalizedCurrentDate.getTime()) {
+        invalidDate.value = true;
+        invalidDateMessage.value =
+          "La fecha de expiración no puede ser en el pasado";
+        return;
+      }
+    }
+
+    if (time && date) {
+      if (selectedDateTime.getTime() < currentDate.getTime()) {
+        invalidDate.value = true;
+        invalidDateMessage.value =
+          "La fecha y hora de expiración no pueden ser en el pasado";
+        return;
+      }
+    }
+
+    invalidDate.value = false;
+    invalidDateMessage.value = "";
+  },
+);
+
 function generateExpirationDate(): string {
   let date: Date | null = null;
   if (!expirationDate.value && !expirationTime.value) {
@@ -153,6 +196,10 @@ async function submitForm() {
   let result: Note | null = null;
   if (props.isTemporary) {
     note.expiresAt = generateExpirationDate();
+    if (invalidDate.value) {
+      showToast("info", "Corriga la fecha antes de guardar");
+      return;
+    }
   }
   try {
     switch (formMode.value) {
@@ -167,15 +214,18 @@ async function submitForm() {
     }
     if (result.id) {
       const message =
-        props.formMode === "create"
+        formMode.value === "create"
           ? "Nota creada exitosamente"
           : "Nota actualizada exitosamente";
+      formMode.value = "edit";
+      note.id = result.id;
       showToast("success", message);
     }
   } catch (error) {
     console.error(error);
     showToast("error", "Ocurrió un error al guardar la nota");
   }
+  emit("shouldReload");
 }
 
 function preFillForm() {
@@ -188,7 +238,7 @@ function preFillForm() {
   if (props.isTemporary && props.note.expiresAt) {
     note.expiresAt = props.note.expiresAt;
     const date = new Date(props.note.expiresAt);
-    expirationDate.value = getDate(date) || "";
+    expirationDate.value = getOnlyDate(date) || "";
     expirationTime.value = formatHour(date.toISOString()) || "";
   }
 
@@ -329,6 +379,12 @@ label {
 
 #close-form-btn:hover {
   scale: 1.1;
+}
+
+.date-error-message {
+  color: var(--error);
+  font-size: var(--fs-sm);
+  margin-top: var(--space-2);
 }
 
 @media (min-width: 768px) {

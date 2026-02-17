@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive, onMounted, onBeforeUnmount, watch } from "vue";
 import { NoteService } from "../services/notes.servic";
 import type { PaginatedResult } from "../types/paginated.result";
 import type { Note } from "../models/note";
@@ -101,10 +101,12 @@ const permanentDeleteOpts: ConfirmationDialogOptions = {
 
 interface Props {
   collection?: number | DefaultStores;
+  shouldReload?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   collection: defaultStores.DEFAULT_NOTES,
+  shouldReload: false,
 });
 
 interface Emits {
@@ -117,9 +119,17 @@ const visibleExtraOptions = ref(false);
 const deletePermanently = ref(false);
 const selectedNote = ref<Note | null>(null);
 
+watch(
+  () => props.shouldReload,
+  async (newVal) => {
+    if (newVal) {
+      await retrieveNotes();
+    }
+  },
+);
+
 interface NoteCard extends Note {
   color?: string;
-  timeLeft?: string;
 }
 
 let pageResult: PaginatedResult<NoteCard> = reactive({
