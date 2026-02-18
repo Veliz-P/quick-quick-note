@@ -26,9 +26,11 @@ export function getOnlyTime(date: Date) {
 }
 
 export function formatDate(dateString: string): string {
+  if (!dateString || new Date(dateString).toString() === "Invalid Date")
+    return "-";
   const date = new Date(dateString);
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const dateFormater = new Intl.DateTimeFormat("es-ES", {
+  const { timeZone, locale } = Intl.DateTimeFormat().resolvedOptions();
+  const dateFormater = new Intl.DateTimeFormat(locale, {
     timeZone,
     month: "long",
   });
@@ -53,19 +55,19 @@ export function formatTimeLeft(ms: number): string {
   const days = Math.floor(ms / (1000 * 60 * 60 * 24));
   let timeLeftString = "";
   if (days > 0) {
-    timeLeftString += `${days} día(s) `;
+    timeLeftString += `${days} d(s) `;
   }
   if (hours > 0 && days === 0) {
-    timeLeftString += `${hours} hora(s) `;
+    timeLeftString += `${hours} h(s) `;
   }
   if (minutes > 0 && hours === 0 && days === 0 && seconds === 0) {
-    timeLeftString += `${minutes} minuto(s) `;
+    timeLeftString += `${minutes} min(s) `;
   }
   if (seconds > 0) {
     if (minutes === 0 && hours === 0 && days === 0) {
-      timeLeftString += `${seconds} segundo(s) `;
+      timeLeftString += `${seconds} sec(s) `;
     } else if (minutes > 0 && hours === 0 && days === 0) {
-      timeLeftString += `${minutes} min, ${seconds} seg(s) `;
+      timeLeftString += `${minutes} min, ${seconds} sec(s) `;
     }
   }
   return timeLeftString;

@@ -1,54 +1,64 @@
 import { openDB } from "idb";
+import type { Collection } from "../models/collection";
 
 const DB_NAME = "notes-db";
-const DB_VERSION = 1;
+const DB_VERSION = 3;
 
-export const defaultStores = {
-  COLLECTION_DETAILS: "collection_details",
-  DEFAULT_NOTES: "default_notes",
-  GARBAGE_NOTES: "garbage_notes",
-  TEMPORARY_NOTES: "temporary_notes",
+export type defaultCollectionId = 1 | 2;
+
+export const stores = {
+  NOTES: "notes",
+  COLLECTIONS: "collections",
 } as const;
-
-export type DefaultStores = (typeof defaultStores)[keyof typeof defaultStores];
 
 export const dbPromise = openDB(DB_NAME, DB_VERSION, {
   upgrade(db) {
-    if (!db.objectStoreNames.contains(defaultStores.COLLECTION_DETAILS)) {
-      const store = db.createObjectStore(defaultStores.COLLECTION_DETAILS, {
+    if (!db.objectStoreNames.contains("notes")) {
+      const notes = db.createObjectStore("notes", {
         keyPath: "id",
         autoIncrement: true,
       });
-      store.createIndex("collectionName", "collectionName", {
+      // notes.createIndex("byCollectionDeletedCreated", [
+      //   "collectionId",
+      //   "isDeleted",
+      //   "createdAt",
+      // ]);
+      // notes.createIndex("byCollectionDeletedId", [
+      //   "collectionId",
+      //   "isDeleted",
+      //   "id",
+      // ]);
+      notes.createIndex("byCollectionId", ["collectionId", "id"]);
+      notes.createIndex("byCollectionCreated", ["collectionId", "createdAt"]);
+      notes.createIndex("expiresAt", "expiresAt");
+    }
+
+    if (!db.objectStoreNames.contains("collections")) {
+      const collections = db.createObjectStore("collections", {
+        keyPath: "id",
+        autoIncrement: true,
+      });
+      collections.createIndex("name", "name", {
         unique: true,
       });
-      store.createIndex("createdAt", "createdAt");
-      store.createIndex("byDeletedId", ["isDeleted", "id"]);
-    }
+      collections.createIndex("createdAt", "createdAt");
+      collections.createIndex("byDeletedId", ["isDeleted", "id"]);
 
-    if (!db.objectStoreNames.contains(defaultStores.DEFAULT_NOTES)) {
-      const store = db.createObjectStore(defaultStores.DEFAULT_NOTES, {
-        keyPath: "id",
-        autoIncrement: true,
-      });
-      store.createIndex("createdAt", "createdAt");
-    }
+      const defaultCollection: Collection = {
+        id: 1,
+        name: "default",
+        createdAt: new Date().toISOString(),
+        isDeleted: false,
+      };
+      const temporaryCollection: Collection = {
+        id: 2,
+        name: "temporary",
+        createdAt: new Date().toISOString(),
+        isDeleted: false,
+      };
 
-    if (!db.objectStoreNames.contains(defaultStores.GARBAGE_NOTES)) {
-      const store = db.createObjectStore(defaultStores.GARBAGE_NOTES, {
-        keyPath: "id",
-        autoIncrement: true,
-      });
-      store.createIndex("createdAt", "createdAt");
-    }
-
-    if (!db.objectStoreNames.contains(defaultStores.TEMPORARY_NOTES)) {
-      const store = db.createObjectStore(defaultStores.TEMPORARY_NOTES, {
-        keyPath: "id",
-        autoIncrement: true,
-      });
-      store.createIndex("createdAt", "createdAt");
-      store.createIndex("expiresAt", "expiresAt");
+      collections.add(defaultCollection);
+      collections.add(temporaryCollection);
     }
   },
   blocked() {

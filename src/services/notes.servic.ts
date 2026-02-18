@@ -1,15 +1,11 @@
-import type { Note, DeletedNote } from "../models/note";
+import type { Note } from "../models/note";
 import { CollectionService } from "./collection.servic";
 import { dbPromise } from "../db/idb";
-import { defaultStores } from "../db/idb";
-import type { DefaultStores } from "../db/idb";
 import type { PaginatedResult } from "../types/paginated.result";
+import { stores } from "../db/idb";
 
 export class NoteService {
-  static async createNote(
-    note: Omit<Note, "id">,
-    collection: number | DefaultStores = defaultStores.DEFAULT_NOTES,
-  ): Promise<Note> {
+  static async createNote(note: Omit<Note, "id">): Promise<Note> {
     if (!note) throw new Error("Invalid note");
     if (note.title.length > 100) throw new Error("Title too long");
     if (
@@ -17,23 +13,21 @@ export class NoteService {
       (note.description.length > 1000 || note.description.length < 5)
     )
       throw new Error("Description invalid, must be between 5 and 1000 chars");
+
+    const collection = note.collectionId || 1; // 1 is default collection id
+    const foundCollection = await CollectionService.getCollection(collection);
+    if (!foundCollection) throw new Error("Collection not found");
+
     const db = await dbPromise;
-    if (collection && typeof collection === "number") {
-      const foundCollection = await CollectionService.getCollection(collection);
-      if (!foundCollection) throw new Error("Collection not found");
-    }
     note.createdAt = new Date().toISOString();
-    const id = await db.add(String(collection), note);
+    const id = await db.add(stores.NOTES, note);
     return {
       id: Number(id),
       ...note,
     };
   }
 
-  static async updateNote(
-    note: Note,
-    collection: number | DefaultStores = defaultStores.DEFAULT_NOTES,
-  ): Promise<Note> {
+  static async updateNote(note: Note): Promise<Note> {
     if (!note) throw new Error("Invalid note");
     if (note.title.length > 100) throw new Error("Title too long");
     if (
@@ -41,49 +35,62 @@ export class NoteService {
       (note.description.length > 1000 || note.description.length < 5)
     )
       throw new Error("Description invalid, must be between 5 and 1000 chars");
+
+    const collection = note.collectionId || 1;
+    const foundCollection = await CollectionService.getCollection(collection);
+    if (!foundCollection) throw new Error("Collection not found");
+
     const db = await dbPromise;
-    console.log(note);
-    if (collection && typeof collection === "number") {
-      const foundCollection = await CollectionService.getCollection(collection);
-      if (!foundCollection) throw new Error("Collection not found");
-    }
-    await db.put(String(collection), note);
+    await db.put(stores.NOTES, note);
     return note;
   }
 
-  static async getNote(
-    id: number,
-    collection: number | DefaultStores = defaultStores.DEFAULT_NOTES,
-  ): Promise<Note | DeletedNote | null> {
+  static async getNote(id: number): Promise<Note | null> {
     if (!id || id <= 0) return null;
     const db = await dbPromise;
-    const note = await db.get(String(collection), id);
+    const note = await db.get(stores.NOTES, id);
     if (!note) return null;
     return note;
   }
 
   static async getNotes(
-    collection: number | DefaultStores = defaultStores.DEFAULT_NOTES,
-    lastKey?: number,
+    collection: number = 1, // 1 is default collection
     pageSize: number = 30,
-  ): Promise<PaginatedResult<Note> | PaginatedResult<DeletedNote>> {
-    if (collection && typeof collection === "number" && collection <= 0)
-      throw new Error("Invalid collection id");
+    lastKey: [number, number] | null = null,
+    onlyDeleted: boolean = false,
+  ): Promise<PaginatedResult<Note>> {
+    if (collection && collection <= 0) throw new Error("Invalid collection id");
     const db = await dbPromise;
     if (collection && typeof collection === "number") {
       const foundCollection = await CollectionService.getCollection(collection);
       if (!foundCollection) throw new Error("Collection not found");
     }
-    const tx = db.transaction(String(collection), "readonly");
-    const store = tx.objectStore(String(collection));
-    let notes: Note[] | DeletedNote[] = [];
-    let newLastKey: number | null = null;
-    let cursor = lastKey
-      ? await store.openCursor(IDBKeyRange.lowerBound(lastKey, true))
-      : await store.openCursor();
+    const tx = db.transaction(stores.NOTES, "readonly");
+    const store = tx.objectStore(stores.NOTES);
+    const index = store.index("byCollectionId");
+    let cursor = null;
+    if (lastKey) {
+      const [lastCollection, lastId] = lastKey;
+      const range = IDBKeyRange.bound(
+        [lastCollection, lastId],
+        [lastCollection, Infinity],
+        true, // exlude last key
+        false,
+      );
+      cursor = await index.openCursor(range);
+    } else {
+      const range = IDBKeyRange.bound([collection, 0], [collection, Infinity]);
+      cursor = await index.openCursor(range);
+    }
+
+    let notes: Note[] = [];
+    let newLastKey: [number, number] | null = null;
     while (cursor && notes.length < pageSize) {
-      notes.push(cursor.value);
-      newLastKey = Number(cursor.key) || null;
+      const note: Note = cursor.value;
+      if (note.isDeleted === onlyDeleted) {
+        notes.push(note);
+        newLastKey = [note.collectionId, note.id!];
+      }
       cursor = await cursor.continue();
     }
     await tx.done;
@@ -95,95 +102,43 @@ export class NoteService {
     };
   }
 
-  static async softDeleteNote(
-    id: number,
-    collection: number | DefaultStores = defaultStores.DEFAULT_NOTES,
-  ) {
+  static async softDeleteNote(id: number) {
     if (!id || id <= 0) throw new Error("Invalid note id");
-    if (collection && typeof collection === "number" && collection <= 0)
-      throw new Error("Invalid collection id");
-    const note = await this.getNote(id, collection);
+    const note = await this.getNote(id);
     if (!note) throw new Error("Note not found");
 
-    const deletedNote: Omit<DeletedNote, "id"> = {
-      title: note.title,
-      description: note.description,
-      createdAt: note.createdAt,
-      expiresAt: note.expiresAt,
-      originalCollection: collection,
-      originalId: note.id as number,
-      deletedAt: new Date().toISOString(),
-    };
-
-    const db = await dbPromise;
-    const tx = db.transaction(
-      [String(collection), defaultStores.GARBAGE_NOTES],
-      "readwrite",
-    );
-    await tx.objectStore(String(collection)).delete(id);
-    await tx.objectStore(defaultStores.GARBAGE_NOTES).add(deletedNote);
+    note.isDeleted = true;
+    await this.updateNote(note);
   }
 
-  static async deleteNote(
-    id: number,
-    collection: number | DefaultStores = defaultStores.DEFAULT_NOTES,
-  ) {
+  static async deleteNote(id: number) {
     if (!id || id <= 0) throw new Error("Invalid note id");
-    if (collection && typeof collection === "number" && collection <= 0)
-      throw new Error("Invalid collection id");
-    const note = await this.getNote(id, collection);
+    const note = await this.getNote(id);
     if (!note) throw new Error("Note not found");
 
     const db = await dbPromise;
-    await db.delete(String(collection), id);
+    await db.delete(stores.NOTES, id);
   }
 
   static async restoreNote(id: number) {
     if (!id || id <= 0) throw new Error("Invalid note id");
-    const note = (await this.getNote(
-      id,
-      defaultStores.GARBAGE_NOTES,
-    )) as DeletedNote;
+    const note = await this.getNote(id);
     if (!note) throw new Error("Note not found");
-    const db = await dbPromise;
-    const tx = db.transaction(
-      [defaultStores.GARBAGE_NOTES, String(note.originalCollection)],
-      "readwrite",
-    );
-    await tx.objectStore(defaultStores.GARBAGE_NOTES).delete(note.id as number);
-    const formatedNote: Note = {
-      id: note.originalId,
-      title: note.title,
-      description: note.description,
-      createdAt: note.createdAt,
-      expiresAt: note.expiresAt,
-    };
-    const originalCollection: number | DefaultStores = note.originalCollection;
-    if (typeof originalCollection === "number") {
-      const foundCollection =
-        await CollectionService.getCollection(originalCollection);
-      if (!foundCollection) {
-        // when collection not found, redirect to default notes collection
-        await tx.objectStore(defaultStores.DEFAULT_NOTES).add(formatedNote);
-        await tx.done;
-        return;
+    const collection = await CollectionService.getCollection(note.collectionId);
+
+    if (!collection) {
+      note.collectionId = 1; // Move to default when previous collection no longer exists
+    }
+
+    if (note.collectionId && note.collectionId === 2 && note.expiresAt) {
+      const currentDate = new Date();
+      const expirationDate = new Date(note.expiresAt);
+      if (expirationDate < currentDate) {
+        note.collectionId = 1; // Move to default when temporary note is expired
       }
     }
-    // if note is expired, add it to default notes
-    if (
-      typeof originalCollection === "string" &&
-      originalCollection === defaultStores.TEMPORARY_NOTES &&
-      note.expiresAt &&
-      new Date(note.expiresAt).getTime() < new Date().getTime()
-    ) {
-      const newNote: Partial<Note> = JSON.parse(JSON.stringify(formatedNote));
-      delete newNote.id;
-      newNote.expiresAt = "";
-      await tx.objectStore(defaultStores.DEFAULT_NOTES).add(newNote);
-      await tx.done;
-      return;
-    }
-    await tx.objectStore(String(originalCollection)).add(formatedNote);
-    await tx.done;
+
+    note.isDeleted = false;
+    await this.updateNote(note);
   }
 }

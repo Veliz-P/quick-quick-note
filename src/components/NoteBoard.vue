@@ -5,7 +5,7 @@
       v-if="pageResult.data"
       v-for="note in pageResult.data"
       :style="{ backgroundColor: note.color }"
-      :key="note.id"
+      :key="note.id || note.createdAt"
     >
       <div class="note" @click="openNoteForm(note)">
         <button
@@ -75,7 +75,6 @@ import { ref, reactive, onMounted, onBeforeUnmount, watch } from "vue";
 import { NoteService } from "../services/notes.servic";
 import type { PaginatedResult } from "../types/paginated.result";
 import type { Note } from "../models/note";
-import { type DefaultStores, defaultStores } from "../db/idb";
 import { ColorService } from "../services/colors.servic";
 import { formatDate, formatHour, formatTimeLeft } from "../utils/date";
 import {
@@ -90,6 +89,7 @@ const { showToast } = useToastStore();
 
 import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
 import type { ConfirmationDialogOptions } from "../types/confirmation.options";
+import type { defaultCollectionId } from "../db/idb";
 const { confirm } = useConfirmationDialogStore();
 
 const permanentDeleteOpts: ConfirmationDialogOptions = {
@@ -100,12 +100,12 @@ const permanentDeleteOpts: ConfirmationDialogOptions = {
 };
 
 interface Props {
-  collection?: number | DefaultStores;
+  collection?: number | defaultCollectionId;
   shouldReload?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  collection: defaultStores.DEFAULT_NOTES,
+  collection: 1, // 1 is default collection
   shouldReload: false,
 });
 
@@ -176,7 +176,7 @@ function openNoteForm(note: Note) {
 async function duplicateNote(note: Note) {
   try {
     let { id, ...newNote } = note;
-    const result = await NoteService.createNote(newNote, props.collection);
+    const result = await NoteService.createNote(newNote);
     if (result.id) {
       showToast("success", "Nota duplicada exitosamente");
     }
@@ -194,12 +194,12 @@ async function deleteNote() {
     if (!deleteNote || !deleteNote.id)
       throw new Error("No note selected for deletion");
     if (!deletePermanently.value) {
-      await NoteService.softDeleteNote(deleteNote.id, props.collection);
+      await NoteService.softDeleteNote(deleteNote.id);
       showToast("success", "Nota movida a papelera");
     } else {
       const ok = await confirm(permanentDeleteOpts);
       if (!ok) return;
-      await NoteService.deleteNote(deleteNote.id, props.collection);
+      await NoteService.deleteNote(deleteNote.id);
       showToast("success", "Nota borrada permanentemente");
     }
     toggleExtraOptions();
@@ -215,7 +215,6 @@ let interval: number | null = null;
 
 onMounted(async () => {
   await retrieveNotes();
-
   if (interval) {
     clearInterval(interval);
   }
@@ -273,6 +272,7 @@ onBeforeUnmount(() => {
   font-size: var(--fs-base);
   width: 100%;
   margin-top: var(--space-4);
+  word-break: break-all;
 }
 
 .creation-details {

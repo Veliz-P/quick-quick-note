@@ -1,6 +1,6 @@
 export interface PaginatedResult<T> {
   data: T[];
   pageSize: number;
-  lastKey: number | null;
+  lastKey: unknown | null;
   hasMore: boolean;
 }

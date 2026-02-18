@@ -85,10 +85,9 @@ import { ColorService } from "../services/colors.servic";
 import { ExpirationNoteService } from "../services/expiration.note.servic";
 import type { FormMode } from "../types/form.mode";
 import type { Note } from "../models/note";
+import type { defaultCollectionId } from "../db/idb";
 import { NoteService } from "../services/notes.servic";
 import { buildDate, getOnlyDate, formatHour } from "../utils/date";
-import type { DefaultStores } from "../db/idb";
-import { defaultStores } from "../db/idb";
 import { useToastStore } from "../stores/useToastStore";
 const { showToast } = useToastStore();
 
@@ -100,12 +99,34 @@ import {
   Calendar1,
   X,
 } from "lucide-vue-next";
+
+interface Props {
+  isTemporary?: boolean;
+  formMode?: FormMode;
+  collection?: number | defaultCollectionId;
+  note?: Note | null;
+}
+const props = withDefaults(defineProps<Props>(), {
+  isTemporary: false,
+  formMode: "create",
+  collection: 1,
+  note: null,
+});
+
+interface Emits {
+  (e: "closeForm"): void;
+  (e: "shouldReload"): void;
+}
+const emit = defineEmits<Emits>();
+
 const note: Note = reactive({
-  id: undefined,
+  id: null,
+  collectionId: props.collection,
   title: "",
   description: "",
   createdAt: "",
   expiresAt: "",
+  isDeleted: false,
 });
 const expirationDate: Ref<string> = ref("");
 const expirationTime: Ref<string> = ref("");
@@ -114,27 +135,6 @@ const wrapperColor = ref("");
 const formMode = ref<FormMode>("create");
 const invalidDate = ref(false);
 const invalidDateMessage = ref("");
-
-interface Props {
-  isTemporary?: boolean;
-  formMode?: FormMode;
-  collection?: number | DefaultStores;
-  note?: Note | null;
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  isTemporary: false,
-  formMode: "create",
-  collection: defaultStores.DEFAULT_NOTES,
-  note: null,
-});
-
-interface Emits {
-  (e: "closeForm"): void;
-  (e: "shouldReload"): void;
-}
-
-const emit = defineEmits<Emits>();
 
 function clearForm() {
   note.id = undefined;
@@ -205,11 +205,11 @@ async function submitForm() {
     switch (formMode.value) {
       case "create":
         const { id, ...newNote } = note;
-        result = await NoteService.createNote(newNote, props.collection);
+        result = await NoteService.createNote(newNote);
         break;
       case "edit":
         const updateNote = { ...note };
-        result = await NoteService.updateNote(updateNote, props.collection);
+        result = await NoteService.updateNote(updateNote);
         break;
     }
     if (result.id) {
@@ -234,6 +234,7 @@ function preFillForm() {
   note.title = props.note.title;
   note.description = props.note.description;
   note.createdAt = props.note.createdAt;
+  note.collectionId = props.note.collectionId;
 
   if (props.isTemporary && props.note.expiresAt) {
     note.expiresAt = props.note.expiresAt;
