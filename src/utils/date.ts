@@ -55,17 +55,17 @@ export function formatTimeLeft(ms: number): string {
   const days = Math.floor(ms / (1000 * 60 * 60 * 24));
   let timeLeftString = "";
   if (days > 0) {
-    timeLeftString += `${days} d(s) `;
+    timeLeftString += `${days} d `;
   }
   if (hours > 0 && days === 0) {
-    timeLeftString += `${hours} h(s) `;
+    timeLeftString += `${hours} h `;
   }
   if (minutes > 0 && hours === 0 && days === 0 && seconds === 0) {
-    timeLeftString += `${minutes} min(s) `;
+    timeLeftString += `${minutes} min `;
   }
   if (seconds > 0) {
     if (minutes === 0 && hours === 0 && days === 0) {
-      timeLeftString += `${seconds} sec(s) `;
+      timeLeftString += `${seconds} s `;
     } else if (minutes > 0 && hours === 0 && days === 0) {
       timeLeftString += `${minutes} min, ${seconds} sec(s) `;
     }

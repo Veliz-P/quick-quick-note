@@ -79,7 +79,7 @@ const { toastMessage, toastType, showingToast } = storeToRefs(useToastStore());
     top: 5%;
     bottom: auto;
     width: 100%;
-    max-width: 350px;
+    max-width: 365px;
   }
 }
 </style>

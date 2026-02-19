@@ -282,12 +282,10 @@ onBeforeUnmount(() => {
   width: 100%;
   color: var(--text-muted);
   font-size: var(--fs-sm);
-  text-transform: capitalize;
 }
 
 .expiration-details {
   color: var(--text-muted);
-  text-transform: capitalize;
   font-size: var(--fs-sm);
   text-align: left;
   width: 100%;

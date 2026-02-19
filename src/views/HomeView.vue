@@ -9,7 +9,9 @@
         <button class="btn-primary" @click="openNoteForm('create', false, 1)">
           <FilePlusCorner /> Crear nota
         </button>
-        <button class="btn-secondary"><FolderPlus /> Crear colección</button>
+        <button class="btn-secondary" @click="visibleNewCollectionForm = true">
+          <FolderPlus /> Crear colección
+        </button>
       </div>
     </section>
     <section class="home-section">
@@ -56,7 +58,10 @@
       :collection="collection"
       :note="note"
     />
-    <!-- TODO: CHANGE SHOULD RELOAD FOR A FUNCTION THAT REFRESHES AND REDIRECTS TO ID 2 (TEMPORARY NOTES) -->
+  </div>
+
+  <div id="new-collection-form-container" v-if="visibleNewCollectionForm">
+    <NewCollectionForm @close-form="visibleNewCollectionForm = false" />
   </div>
 </template>
 <script setup lang="ts">
@@ -65,6 +70,7 @@ import { FilePlusCorner, FolderPlus } from "lucide-vue-next";
 import type { FormMode } from "../types/form.mode";
 import NoteBoard from "../components/NoteBoard.vue";
 import NoteForm from "../components/NoteForm.vue";
+import NewCollectionForm from "../components/NewCollectionForm.vue";
 import type { Note } from "../models/note";
 import type { defaultCollectionId } from "../db/idb";
 
@@ -74,6 +80,7 @@ let isTemporary = false;
 let collection: number | defaultCollectionId = 2; // 2 is temporary collection
 let note: Note | null = null;
 let shouldReloadNotes = ref(false);
+const visibleNewCollectionForm = ref(false);
 
 function requestReload() {
   shouldReloadNotes.value = true;
@@ -167,7 +174,8 @@ h2 {
   margin-bottom: var(--space-16);
 }
 
-#note-form-container {
+#note-form-container,
+#new-collection-form-container {
   position: fixed;
   inset: 0;
   display: flex;
