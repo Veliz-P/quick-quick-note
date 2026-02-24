@@ -18,16 +18,6 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
         keyPath: "id",
         autoIncrement: true,
       });
-      // notes.createIndex("byCollectionDeletedCreated", [
-      //   "collectionId",
-      //   "isDeleted",
-      //   "createdAt",
-      // ]);
-      // notes.createIndex("byCollectionDeletedId", [
-      //   "collectionId",
-      //   "isDeleted",
-      //   "id",
-      // ]);
       notes.createIndex("byCollectionId", ["collectionId", "id"]);
       notes.createIndex("byCollectionCreated", ["collectionId", "createdAt"]);
       notes.createIndex("expiresAt", "expiresAt");

@@ -75,6 +75,10 @@ const { toastMessage, toastType, showingToast } = storeToRefs(useToastStore());
     height: 100%;
   }
 
+  #subviews-container {
+    padding: var(--space-4) var(--space-10);
+  }
+
   #toast-container {
     top: 5%;
     bottom: auto;

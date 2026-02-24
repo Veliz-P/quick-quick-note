@@ -236,6 +236,7 @@ const closeMenu = () => (isMenuOpen.value = false);
     color: var(--sidebar-text);
     overflow: auto;
     overflow-x: hidden;
+    border-right: 1px solid var(--border);
   }
   .dark #sidebar-desktop {
     background-color: var(--secondary-800);

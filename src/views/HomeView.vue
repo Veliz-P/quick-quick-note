@@ -15,24 +15,7 @@
       </div>
     </section>
     <section class="home-section">
-      <!-- TODO: Add recent actions-->
-      <h2>Actividad reciente</h2>
-      <div id="recent-actions-container">
-        <ul id="recent-actions-list">
-          <li>
-            <p class="action-date">20/10/2025</p>
-            <p>Ejemplo 1</p>
-          </li>
-          <li>
-            <p class="action-date">21/10/2025</p>
-            <p>Ejemplo 2</p>
-          </li>
-          <li>
-            <p class="action-date">22/10/2025</p>
-            <p>Ejemplo 3</p>
-          </li>
-        </ul>
-      </div>
+      <RecentActivity />
     </section>
     <section class="home-section">
       <h2 id="temporary-notes-h2">Notas temporales</h2>
@@ -70,6 +53,8 @@ import { FilePlusCorner, FolderPlus } from "lucide-vue-next";
 import type { FormMode } from "../types/form.mode";
 import NoteBoard from "../components/NoteBoard.vue";
 import NoteForm from "../components/NoteForm.vue";
+import RecentActivity from "../components/RecentActivity.vue";
+
 import NewCollectionForm from "../components/NewCollectionForm.vue";
 import type { Note } from "../models/note";
 import type { defaultCollectionId } from "../db/idb";
@@ -153,22 +138,6 @@ h2 {
   font-size: var(--fs-sm);
 }
 
-#recent-actions-container {
-  background-color: var(--bg);
-  padding: var(--space-4);
-  border-radius: var(--rounded-md);
-  border: 1.5px solid var(--border);
-  width: 100%;
-  box-shadow: var(--shadow-sm);
-}
-
-#recent-actions-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  list-style: none;
-}
-
 #temporary-notes-container {
   margin-top: var(--space-8);
   margin-bottom: var(--space-16);
@@ -183,11 +152,5 @@ h2 {
   align-items: center;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 2;
-}
-
-@media (min-width: 768px) {
-  #recent-actions-container {
-    max-width: 650px;
-  }
 }
 </style>

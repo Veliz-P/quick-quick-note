@@ -90,7 +90,8 @@ import { NoteService } from "../services/notes.servic";
 import { buildDate, getOnlyDate, formatHour } from "../utils/date";
 import { useToastStore } from "../stores/useToastStore";
 const { showToast } = useToastStore();
-
+import { useActionEventStore } from "../stores/useActionEventStore";
+const actionEventStore = useActionEventStore();
 import {
   Paperclip,
   Save,
@@ -217,6 +218,9 @@ async function submitForm() {
         formMode.value === "create"
           ? "Nota creada exitosamente"
           : "Nota actualizada exitosamente";
+      if (formMode.value === "create") {
+        actionEventStore.register("note_created");
+      }
       formMode.value = "edit";
       note.id = result.id;
       showToast("success", message);

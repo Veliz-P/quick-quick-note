@@ -35,10 +35,11 @@
 import { FolderPlus } from "lucide-vue-next";
 import { CollectionService } from "../services/collection.servic";
 import { ref, watch } from "vue";
-import { useToastStore } from "../stores/useToastStore";
 import { debounce } from "../utils/debounce";
-
+import { useToastStore } from "../stores/useToastStore";
 const { showToast } = useToastStore();
+import { useActionEventStore } from "../stores/useActionEventStore";
+const actionEventStore = useActionEventStore();
 
 const collectionName = ref("");
 const collectionExists = ref(false);
@@ -79,8 +80,9 @@ async function submitForm() {
     const collectionCreated = await CollectionService.createCollection(
       collectionName.value.trim(),
     );
-    if (collectionCreated) {
+    if (collectionCreated && collectionCreated.id) {
       showToast("success", "Colección creada exitosamente");
+      actionEventStore.register("collection_created");
       closeForm();
     }
   } catch (error) {

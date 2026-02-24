@@ -86,11 +86,12 @@ import {
 } from "lucide-vue-next";
 import { useToastStore } from "../stores/useToastStore";
 const { showToast } = useToastStore();
-
-import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
 import type { ConfirmationDialogOptions } from "../types/confirmation.options";
 import type { defaultCollectionId } from "../db/idb";
+import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
 const { confirm } = useConfirmationDialogStore();
+import { useActionEventStore } from "../stores/useActionEventStore";
+const actionEventStore = useActionEventStore();
 
 const permanentDeleteOpts: ConfirmationDialogOptions = {
   question: "¿Estás seguro de que quieres borrar esta nota?",
@@ -196,11 +197,13 @@ async function deleteNote() {
     if (!deletePermanently.value) {
       await NoteService.softDeleteNote(deleteNote.id);
       showToast("success", "Nota movida a papelera");
+      actionEventStore.register("note_soft_deleted");
     } else {
       const ok = await confirm(permanentDeleteOpts);
       if (!ok) return;
       await NoteService.deleteNote(deleteNote.id);
       showToast("success", "Nota borrada permanentemente");
+      actionEventStore.register("note_hard_deleted");
     }
     toggleExtraOptions();
     await retrieveNotes();
