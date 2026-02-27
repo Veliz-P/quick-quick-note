@@ -141,4 +141,28 @@ export class NoteService {
     note.isDeleted = false;
     await this.updateNote(note);
   }
+
+  static async getCount(
+    collectionId: number,
+    onlyDeleted: boolean = false,
+  ): Promise<number> {
+    const collection = await CollectionService.getCollection(collectionId);
+    if (!collection) throw new Error("Collection not found");
+    const db = await dbPromise;
+    const tx = db.transaction(stores.NOTES, "readonly");
+    const idx = tx.objectStore(stores.NOTES).index("byCollectionId");
+    const range = IDBKeyRange.bound(
+      [collectionId, 0],
+      [collectionId, Infinity],
+    );
+    let count = 0;
+    let cursor = await idx.openCursor(range);
+    while (cursor) {
+      const note: Note = cursor.value;
+      if (note.isDeleted === onlyDeleted) count++;
+      cursor = await cursor.continue();
+    }
+    await tx.done;
+    return count;
+  }
 }

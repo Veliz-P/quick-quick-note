@@ -1,62 +1,74 @@
 <template>
-  <div class="notes-grid" v-if="pageResult.data && pageResult.data.length > 0">
-    <div
-      class="note-wrapper"
-      v-if="pageResult.data"
-      v-for="note in pageResult.data"
-      :style="{ backgroundColor: note.color }"
-      :key="note.id || note.createdAt"
+  <div v-if="shouldRenderGrid && realNotesLength > 0" class="grid-container">
+    <Grid
+      class="virtual-grid"
+      :length="notesLength"
+      :page-size="pageSize"
+      :page-provider="pageProvider"
     >
-      <div class="note" @click="openNoteForm(note)">
-        <button
-          class="btn-secondary note-actions-btn"
-          @click.stop="toggleExtraOptions(note)"
-        >
-          <Ellipsis :size="20" />
-        </button>
-        <h3>
-          {{
-            note.title.length > 50
-              ? note.title.slice(0, 50) + "..."
-              : note.title
-          }}
-        </h3>
-        <div v-if="!note.expiresAt" class="creation-details">
-          <p class="note-date">{{ formatDate(note.createdAt) }}</p>
-          <p class="note-date">
-            {{ formatHour(note.createdAt) }}
-          </p>
-        </div>
-        <div v-else-if="note.expiresAt" class="expiration-details">
-          {{
-            formatTimeLeft(new Date(note.expiresAt).getTime() - now.getTime())
-          }}
-        </div>
+      <template #default="{ item, style }">
         <div
-          @click.stop=""
-          v-if="
-            visibleExtraOptions && selectedNote && selectedNote.id === note.id
-          "
-          class="extra-options"
+          :key="(item as Note).id!"
+          class="note-wrapper"
+          :style="{ ...style, backgroundColor: (item as NoteCard).color }"
         >
-          <ul>
-            <li @click="duplicateNote(note)">
-              <button><Copy :size="20" /> Duplicar</button>
-            </li>
-            <li>
-              <button><MoveUpRight :size="20" /> Mover a</button>
-            </li>
-            <li @click="deleteNote()" class="delete-item">
-              <button><Trash2 :size="20" /> Borrar</button>
-            </li>
-            <li>
-              <input v-model="deletePermanently" type="checkbox" />
-              <label>¿Borrar sin papelera?</label>
-            </li>
-          </ul>
+          <div class="note" @click="openNoteForm(item as Note)">
+            <button
+              class="btn-secondary note-actions-btn"
+              @click.stop="toggleExtraOptions(item as Note)"
+            >
+              <Ellipsis :size="20" />
+            </button>
+            <h3>
+              {{
+                (item as Note).title.length > 50
+                  ? (item as Note).title.slice(0, 50) + "..."
+                  : (item as Note).title
+              }}
+            </h3>
+            <div v-if="!(item as Note).expiresAt" class="creation-details">
+              <p class="note-date">
+                {{ formatDate((item as Note).createdAt) }}
+              </p>
+              <p class="note-date">
+                {{ formatHour((item as Note).createdAt) }}
+              </p>
+            </div>
+            <div
+              v-else-if="(item as Note).expiresAt"
+              class="expiration-details"
+            >
+              {{
+                formatTimeLeft(
+                  new Date((item as Note).expiresAt!).getTime() - now.getTime(),
+                )
+              }}
+            </div>
+            <div
+              @click.stop=""
+              v-if="activeId === (item as Note).id"
+              class="extra-options"
+            >
+              <ul>
+                <li @click="duplicateNote(item as Note)">
+                  <button><Copy :size="20" /> Duplicar</button>
+                </li>
+                <li>
+                  <button><MoveUpRight :size="20" /> Mover a</button>
+                </li>
+                <li @click="deleteNote()" class="delete-item">
+                  <button><Trash2 :size="20" /> Borrar</button>
+                </li>
+                <li>
+                  <input v-model="deletePermanently" type="checkbox" />
+                  <label>¿Borrar sin papelera?</label>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </Grid>
   </div>
 
   <div v-else class="empty-state">
@@ -71,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onBeforeUnmount, watch } from "vue";
+import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import { NoteService } from "../services/notes.servic";
 import type { PaginatedResult } from "../types/paginated.result";
 import type { Note } from "../models/note";
@@ -92,6 +104,7 @@ import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore
 const { confirm } = useConfirmationDialogStore();
 import { useActionEventStore } from "../stores/useActionEventStore";
 const actionEventStore = useActionEventStore();
+import Grid from "vue-virtual-scroll-grid";
 
 const permanentDeleteOpts: ConfirmationDialogOptions = {
   question: "¿Estás seguro de que quieres borrar esta nota?",
@@ -99,6 +112,73 @@ const permanentDeleteOpts: ConfirmationDialogOptions = {
   confirmText: "Sí, borrar permanentemente",
   cancelText: "No, cancelar",
 };
+
+const notes = ref<NoteCard[]>([]);
+const pageSize = 5;
+let currentCursor: unknown | null = null;
+let hasMore = true;
+let isLoading = false;
+const notesLength = ref(0);
+const realNotesLength = ref(0); // It will determine if grid or empty state should be rendered
+const shouldRenderGrid = ref(true);
+
+async function fetchNotes() {
+  const cursor = (currentCursor as [number, number]) || undefined;
+  const result: PaginatedResult<Note> = await NoteService.getNotes(
+    props.collection,
+    pageSize,
+    cursor,
+  );
+  currentCursor = result.lastKey;
+  hasMore = result.hasMore;
+  const existingIds = new Set(notes.value.map((note) => note.id));
+  const newItems = result.data
+    .filter((note) => !existingIds.has(note.id))
+    .map((note) => ({
+      ...note,
+      color: ColorService.getRandomColor(),
+    }));
+  notes.value.push(...newItems);
+}
+
+const pageProvider = async (pageNumber: number, pageSize: number) => {
+  const start = pageNumber * pageSize;
+  const end = start + pageSize;
+
+  if (notes.value.length >= end) {
+    return notes.value.slice(start, end);
+  }
+  if (isLoading || !hasMore) {
+    return notes.value.slice(start, end);
+  }
+  isLoading = true;
+  await fetchNotes();
+  if (hasMore) {
+    notesLength.value += pageSize;
+  } else {
+    notesLength.value = notes.value.length;
+  }
+  isLoading = false;
+  return notes.value.slice(start, end);
+};
+
+let timeout: number | null = null;
+async function refreshNotes() {
+  notes.value = [];
+  currentCursor = null;
+  activeId.value = null;
+  hasMore = true;
+  isLoading = false;
+  realNotesLength.value = 0;
+  realNotesLength.value = await NoteService.getCount(props.collection);
+  notesLength.value =
+    realNotesLength.value < pageSize ? realNotesLength.value : pageSize;
+  if (timeout) clearTimeout(timeout);
+  shouldRenderGrid.value = false;
+  timeout = setTimeout(() => {
+    shouldRenderGrid.value = true;
+  }, 100);
+}
 
 interface Props {
   collection?: number | defaultCollectionId;
@@ -116,15 +196,13 @@ interface Emits {
 
 const emit = defineEmits<Emits>();
 
-const visibleExtraOptions = ref(false);
 const deletePermanently = ref(false);
-const selectedNote = ref<Note | null>(null);
 
 watch(
   () => props.shouldReload,
   async (newVal) => {
     if (newVal) {
-      await retrieveNotes();
+      await refreshNotes();
     }
   },
 );
@@ -133,42 +211,21 @@ interface NoteCard extends Note {
   color?: string;
 }
 
-let pageResult: PaginatedResult<NoteCard> = reactive({
-  data: [],
-  pageSize: 0,
-  lastKey: null,
-  hasMore: false,
-});
-
+const activeId = ref<number | null>(null);
 function toggleExtraOptions(note?: Note) {
-  if (visibleExtraOptions.value) {
-    visibleExtraOptions.value = false;
-    selectedNote.value = null;
+  if (!note) {
+    activeId.value = null;
     return;
   }
-
-  visibleExtraOptions.value = true;
-  if (note) selectedNote.value = note;
-}
-
-async function retrieveNotes() {
-  try {
-    const result = await NoteService.getNotes(props.collection);
-    pageResult.data = result.data.map((note) => ({
-      ...note,
-      color: ColorService.getRandomColor(),
-    }));
-    pageResult.pageSize = result.pageSize;
-    pageResult.lastKey = result.lastKey;
-    pageResult.hasMore = result.hasMore;
-  } catch (error) {
-    console.error(error);
+  if (note.id === activeId.value) {
+    activeId.value = null;
+    return;
   }
+  activeId.value = note.id!;
 }
 
 function openNoteForm(note: Note) {
-  visibleExtraOptions.value = false;
-  selectedNote.value = note;
+  activeId.value = null;
   let formatedNote = { ...note } as NoteCard;
   delete formatedNote.color;
   emit("open-form", formatedNote);
@@ -182,7 +239,7 @@ async function duplicateNote(note: Note) {
       showToast("success", "Nota duplicada exitosamente");
     }
     toggleExtraOptions();
-    await retrieveNotes();
+    await refreshNotes();
   } catch (error) {
     console.error(error);
     showToast("error", "Ocurrió un error al duplicar la nota");
@@ -191,22 +248,21 @@ async function duplicateNote(note: Note) {
 
 async function deleteNote() {
   try {
-    const deleteNote = { ...selectedNote.value };
-    if (!deleteNote || !deleteNote.id)
-      throw new Error("No note selected for deletion");
+    const deleteNoteId = activeId.value;
+    if (!deleteNoteId) throw new Error("No note selected for deletion");
     if (!deletePermanently.value) {
-      await NoteService.softDeleteNote(deleteNote.id);
+      await NoteService.softDeleteNote(deleteNoteId);
       showToast("success", "Nota movida a papelera");
       actionEventStore.register("note_soft_deleted");
     } else {
       const ok = await confirm(permanentDeleteOpts);
       if (!ok) return;
-      await NoteService.deleteNote(deleteNote.id);
+      await NoteService.deleteNote(deleteNoteId);
       showToast("success", "Nota borrada permanentemente");
       actionEventStore.register("note_hard_deleted");
     }
     toggleExtraOptions();
-    await retrieveNotes();
+    await refreshNotes();
   } catch (error) {
     console.error(error);
     showToast("error", "Ocurrió un error al borrar la nota");
@@ -217,11 +273,12 @@ const now = ref(new Date());
 let interval: number | null = null;
 
 onMounted(async () => {
-  await retrieveNotes();
   if (interval) {
     clearInterval(interval);
   }
-
+  realNotesLength.value = await NoteService.getCount(props.collection);
+  notesLength.value =
+    realNotesLength.value < pageSize ? realNotesLength.value : pageSize;
   interval = setInterval(() => {
     now.value = new Date();
   }, 1000);
@@ -235,21 +292,21 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.notes-grid {
+.grid-container {
+  width: 100%;
+  height: 100%;
+  margin-bottom: var(--space-4);
+}
+.virtual-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--space-4);
-  height: 100%;
-  max-height: 300px;
-  overflow-y: auto;
-  overflow-x: hidden;
+  gap: var(--space-6);
 }
-
 .note {
   padding: var(--space-4);
   background: var(--bg-light);
   border-radius: var(--rounded-3xl);
-  height: 100%;
+  height: 130px;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -258,14 +315,12 @@ onBeforeUnmount(() => {
   gap: var(--space-6);
   position: relative;
 }
-
 .note-wrapper {
   padding: var(--space-3) var(--space-2);
   border-radius: var(--rounded-xl);
   transition: padding 0.2s ease;
   box-shadow: var(--shadow-lg);
 }
-
 .note-wrapper:hover {
   padding: var(--space-3);
   cursor: pointer;
@@ -274,10 +329,9 @@ onBeforeUnmount(() => {
 .note h3 {
   font-size: var(--fs-base);
   width: 100%;
-  margin-top: var(--space-4);
+  margin-top: var(--space-2);
   word-break: break-all;
 }
-
 .creation-details {
   display: flex;
   align-items: center;
@@ -286,14 +340,12 @@ onBeforeUnmount(() => {
   color: var(--text-muted);
   font-size: var(--fs-sm);
 }
-
 .expiration-details {
   color: var(--text-muted);
   font-size: var(--fs-sm);
   text-align: left;
   width: 100%;
 }
-
 .note-actions-btn {
   padding: var(--space-1);
   border-radius: var(--rounded-full);
@@ -303,11 +355,9 @@ onBeforeUnmount(() => {
   top: 3%;
   right: 3%;
 }
-
 .note-actions-btn:hover {
   border-color: var(--border);
 }
-
 .extra-options {
   display: flex;
   flex-direction: column;
@@ -322,11 +372,9 @@ onBeforeUnmount(() => {
   z-index: 2;
   border: 2px solid var(--border);
 }
-
 .extra-options ul {
   list-style-type: none;
 }
-
 .extra-options li {
   padding: var(--space-1);
   padding-right: var(--space-12);
@@ -336,7 +384,6 @@ onBeforeUnmount(() => {
   font-size: var(--fs-sm);
   color: var(--secondary-400);
 }
-
 .extra-options button {
   font-size: var(--fs-sm);
   color: var(--secondary-400);
@@ -345,15 +392,12 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: var(--space-2);
 }
-
 .dark .extra-options button {
   color: var(--secondary-200);
 }
-
 .dark .extra-options li:hover {
   background-color: var(--secondary-500);
 }
-
 .extra-options li:last-child {
   display: flex;
   flex-direction: row;
@@ -366,47 +410,38 @@ onBeforeUnmount(() => {
   font-size: var(--fs-sm);
   transition: background-color 0.2s ease;
 }
-
 .dark .extra-options li:last-child {
   color: var(--secondary-200);
 }
-
 .extra-options li:hover {
   background-color: var(--secondary-100);
 }
-
 .extra-options li:last-child:hover {
   background-color: inherit;
   cursor: default;
 }
-
 .extra-options input {
   width: auto;
 }
-
 .delete-item {
   border-top: 2px solid var(--border);
   padding-top: var(--space-2) !important;
 }
-
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-
 .empty-state-icon {
   color: var(--primary-500);
   background-color: var(--primary-200);
   padding: var(--space-4);
   border-radius: var(--rounded-full);
 }
-
 .dark .empty-state-icon {
   color: var(--primary-300);
   background-color: var(--primary-600);
 }
-
 .empty-state h3 {
   font-size: var(--fs-lg);
   margin-bottom: var(--space-1);
@@ -415,7 +450,6 @@ onBeforeUnmount(() => {
   color: var(--text-muted);
   margin-bottom: var(--space-4);
 }
-
 .icon-wrapper {
   opacity: 0.9;
   background-image: radial-gradient(
@@ -430,41 +464,36 @@ onBeforeUnmount(() => {
   margin-bottom: var(--space-3);
   width: 100%;
 }
-
 .dark .icon-wrapper {
   background-image: radial-gradient(
     var(--secondary-400) 1px,
     transparent 0.8px
   );
 }
-
-@media (min-width: 480px) {
-  .notes-grid {
-    height: auto;
-    overflow: visible;
+@media (min-width: 640px) {
+  .virtual-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-6);
+  }
+  .note {
+    min-height: 140px;
   }
 }
-
 @media (min-width: 1280px) {
-  .notes-grid {
+  .virtual-grid {
     grid-template-columns: repeat(4, 1fr);
     gap: var(--space-8);
   }
 
-  .note {
-    min-height: 150px;
-  }
-
   .note h3 {
     font-size: var(--fs-md);
+    margin-top: var(--space-3);
   }
 }
-
 @media (min-width: 1920px) {
-  .notes-grid {
+  .virtual-grid {
     grid-template-columns: repeat(6, 1fr);
     gap: var(--space-12);
-    height: auto;
   }
 }
 </style>

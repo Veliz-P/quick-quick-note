@@ -183,7 +183,6 @@ h2 {
   width: 100%;
   box-shadow: var(--shadow-sm);
   height: auto;
-  /* max-height: 60vh; */
   max-height: 250px;
   overflow-y: auto;
   display: flex;
