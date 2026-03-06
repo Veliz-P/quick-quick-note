@@ -12,7 +12,7 @@
     <ToastNotification :message="toastMessage" :type="toastType" />
   </div>
 
-  <div id="confirmation-dialog-container" v-show="isOpen">
+  <div id="confirmation-dialog-container" class="popup-layout" v-show="isOpen">
     <ConfirmationPopup />
   </div>
 </template>
@@ -54,15 +54,6 @@ const { toastMessage, toastType, showingToast } = storeToRefs(useToastStore());
   border-radius: var(--rounded-3xl);
   width: 100%;
   max-width: 75%;
-}
-
-#confirmation-dialog-container {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: rgba(0, 0, 0, 0.5);
 }
 
 #sidebar-container {

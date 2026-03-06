@@ -6,31 +6,39 @@
     </div>
 
     <ul id="links">
-      <li class="link-item">
-        <Home />
-        <router-link to="/home">Inicio</router-link>
-      </li>
-      <li class="link-item">
-        <NotebookPen />
-        <router-link to="/collections"
-          >Colecciones y <br />
-          notas</router-link
-        >
-      </li>
-      <li class="link-item">
-        <Trash2 />
-        <router-link to="/">Papelera</router-link>
-      </li>
-      <li class="link-item">
-        <Info />
-        <router-link to="/">App Info</router-link>
-      </li>
+      <router-link to="/home"
+        ><li class="link-item">
+          <Home />
+          Inicio
+        </li></router-link
+      >
+      <router-link to="/collections">
+        <li class="link-item">
+          <NotebookPen />
+          Colecciones y <br />
+          notas
+        </li>
+      </router-link>
+      <router-link to="/">
+        <li class="link-item">
+          <Trash2 />
+          Papelera
+        </li>
+      </router-link>
+      <router-link to="/">
+        <li class="link-item">
+          <Info />
+          App Info
+        </li>
+      </router-link>
     </ul>
 
-    <div id="settings" class="link-item">
-      <Settings />
-      <router-link to="/">Ajustes</router-link>
-    </div>
+    <router-link to="/" id="settings">
+      <div class="link-item">
+        <Settings />
+        Ajustes
+      </div>
+    </router-link>
   </nav>
 
   <nav id="sidebar-mobile">
@@ -45,37 +53,42 @@
     <ul
       v-if="isMenuOpen"
       id="links-mobile"
-      :class="isMenuOpen ? 'slide-down' : 'slide-up'"
+      :class="isMenuOpen ? 'slide-down' : ''"
     >
       <li>
         <button @click="closeMenu" id="close-menu-btn">
           <ChevronUp />
         </button>
       </li>
-      <li class="link-item">
-        <Home />
-        <router-link to="/home" @click="closeMenu">Inicio</router-link>
-      </li>
-      <li class="link-item">
-        <NotebookPen />
-        <router-link to="/collections" @click="closeMenu"
-          >Colecciones y notas</router-link
-        >
-      </li>
-      <li class="link-item">
-        <Trash2 />
-        <router-link to="/" @click="closeMenu">Papelera</router-link>
-      </li>
-      <li class="link-item">
-        <Info />
-        <router-link to="/" @click="closeMenu">App Info</router-link>
-      </li>
-
-      <li>
-        <button id="settings-btn-mobile" @click="closeMenu">
-          <Settings /> Ajustes
-        </button>
-      </li>
+      <router-link to="/home" @click="closeMenu">
+        <li class="link-item">
+          <Home />
+          Inicio
+        </li>
+      </router-link>
+      <router-link to="/collections" @click="closeMenu">
+        <li class="link-item">
+          <NotebookPen />
+          Colecciones y notas
+        </li>
+      </router-link>
+      <router-link to="/" @click="closeMenu">
+        <li class="link-item">
+          <Trash2 />
+          Papelera
+        </li>
+      </router-link>
+      <router-link to="/" @click="closeMenu">
+        <li class="link-item">
+          <Info />
+          App Info
+        </li>
+      </router-link>
+      <router-link to="/" @click="closeMenu">
+        <li>
+          <button id="settings-btn-mobile"><Settings /> Ajustes</button>
+        </li>
+      </router-link>
     </ul>
   </nav>
 </template>
@@ -173,6 +186,10 @@ const closeMenu = () => (isMenuOpen.value = false);
   border-top: 1px solid var(--sidebar-border);
 }
 
+#links-mobile a {
+  color: var(--sidebar-text);
+}
+
 .dark #links-mobile {
   background-color: var(--secondary-800);
 }
@@ -187,18 +204,11 @@ const closeMenu = () => (isMenuOpen.value = false);
   transition: background-color 0.2s ease;
 }
 
-.link-item a,
-#settings a {
-  color: var(--sidebar-text);
-}
-
-.link-item:hover,
-.link-item:hover a {
+.link-item:hover {
   color: var(--primary-400);
   background-color: var(--secondary-500);
 }
-.dark #sidebar-mobile .link-item:hover,
-.dark #sidebar-mobile .link-item:hover a {
+.dark #sidebar-mobile .link-item:hover {
   color: var(--primary-400);
   background-color: var(--secondary-600);
 }
@@ -225,6 +235,7 @@ const closeMenu = () => (isMenuOpen.value = false);
   #sidebar-mobile {
     display: none;
   }
+
   #sidebar-desktop {
     display: flex;
     flex-direction: column;
@@ -242,6 +253,7 @@ const closeMenu = () => (isMenuOpen.value = false);
   .dark #sidebar-desktop {
     background-color: var(--secondary-800);
   }
+
   #logo {
     margin-top: var(--space-6);
   }
@@ -262,22 +274,20 @@ const closeMenu = () => (isMenuOpen.value = false);
     text-decoration: none;
   }
 
+  #settings {
+    padding: var(--space-6);
+    width: 100%;
+    border-top: 1.5px solid var(--light);
+  }
+
   #settings:hover a {
     color: var(--primary-400);
     background-color: var(--secondary-500);
   }
-  .dark #sidebar-desktop .link-item:hover,
-  .dark #sidebar-desktop .link-item:hover a,
-  .dark #sidebar-desktop #settings:hover a {
+
+  .dark #sidebar-desktop .link-item:hover {
     color: var(--primary-400);
     background-color: var(--secondary-600);
-  }
-
-  #settings {
-    margin: auto var(--space-8);
-    padding: var(--space-8);
-    width: 100%;
-    border-top: 1.5px solid var(--sidebar-text);
   }
 }
 
