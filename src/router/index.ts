@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 
 import RootView from "../views/RootView.vue";
 import HomeView from "../views/HomeView.vue";
-
+import CollectionView from "../views/CollectionView.vue";
 interface Route {
   path: string;
   name: string;
@@ -20,6 +20,10 @@ const routes: Route[] = [
       {
         path: "home",
         component: HomeView,
+      },
+      {
+        path: "collections",
+        component: CollectionView,
       },
     ],
   },

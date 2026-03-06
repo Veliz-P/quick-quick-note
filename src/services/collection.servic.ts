@@ -84,24 +84,27 @@ export class CollectionService {
   }
 
   static async getCollections(
-    lastkey?: number,
-    onlyDeleted: boolean = false,
+    lastKey?: string | null,
     pageSize: number = 30,
+    onlyDeleted: boolean = false,
   ): Promise<PaginatedResult<Collection>> {
     const db = await dbPromise;
     const tx = db.transaction(stores.COLLECTIONS, "readonly");
     const store = tx.objectStore(stores.COLLECTIONS);
-    const index = store.index("byDeletedId");
-    const range = lastkey
-      ? IDBKeyRange.lowerBound([onlyDeleted, lastkey], true)
-      : IDBKeyRange.lowerBound([onlyDeleted, 0]);
+    const index = store.index("createdAt");
+    const now = new Date().toISOString();
+    const range = lastKey
+      ? IDBKeyRange.upperBound(lastKey, true)
+      : IDBKeyRange.upperBound(now);
 
     let collections: Collection[] = [];
-    let cursor = await index.openCursor(range);
-    let newLastKey: number | null = null;
+    let cursor = await index.openCursor(range, "prev");
+    let newLastKey: string | null = null;
     while (cursor && collections.length < pageSize) {
-      collections.push(cursor.value);
-      newLastKey = Number(cursor.key) || null;
+      if (cursor.value.isDeleted === onlyDeleted) {
+        collections.push(cursor.value);
+        newLastKey = (cursor.key as string) || null;
+      }
       cursor = await cursor.continue();
     }
     await tx.done;
@@ -133,13 +136,13 @@ export class CollectionService {
 
     await tx.objectStore(stores.COLLECTIONS).delete(id);
     const store = tx.objectStore(stores.NOTES);
-    const index = store.index("byCollectionDeletedCreated");
+    const index = store.index("byCollectionId");
     const collectionId = Number(id);
 
     let cursor = await index.openKeyCursor(
       IDBKeyRange.bound(
-        [collectionId, false, ""], // collectionId, isDeleted, createdAt
-        [collectionId, true, "\uffff"],
+        [collectionId, 0], // collectionId, id
+        [collectionId, Infinity],
       ),
     );
     while (cursor) {

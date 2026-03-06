@@ -39,7 +39,7 @@ const { toastMessage, toastType, showingToast } = storeToRefs(useToastStore());
 }
 
 #subviews-container {
-  overflow: auto;
+  overflow-y: auto;
   overflow-x: hidden;
   padding: var(--space-4) var(--space-8);
   width: 100%;
@@ -63,6 +63,11 @@ const { toastMessage, toastType, showingToast } = storeToRefs(useToastStore());
   justify-content: center;
   align-items: center;
   background-color: rgba(0, 0, 0, 0.5);
+}
+
+#sidebar-container {
+  position: relative;
+  z-index: 2;
 }
 
 @media (min-width: 768px) {

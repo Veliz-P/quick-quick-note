@@ -207,6 +207,15 @@ watch(
   },
 );
 
+watch(
+  () => props.collection,
+  async (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      await refreshNotes();
+    }
+  },
+);
+
 interface NoteCard extends Note {
   color?: string;
 }

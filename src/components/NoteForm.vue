@@ -223,6 +223,7 @@ async function submitForm() {
       }
       formMode.value = "edit";
       note.id = result.id;
+      note.createdAt = result.createdAt;
       showToast("success", message);
     }
   } catch (error) {

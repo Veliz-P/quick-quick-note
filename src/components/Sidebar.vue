@@ -12,7 +12,7 @@
       </li>
       <li class="link-item">
         <NotebookPen />
-        <router-link to="/"
+        <router-link to="/collections"
           >Colecciones y <br />
           notas</router-link
         >
@@ -58,7 +58,9 @@
       </li>
       <li class="link-item">
         <NotebookPen />
-        <router-link to="/" @click="closeMenu">Colecciones y notas</router-link>
+        <router-link to="/collections" @click="closeMenu"
+          >Colecciones y notas</router-link
+        >
       </li>
       <li class="link-item">
         <Trash2 />
@@ -169,7 +171,6 @@ const closeMenu = () => (isMenuOpen.value = false);
   padding: var(--space-5);
   list-style: none;
   border-top: 1px solid var(--sidebar-border);
-  z-index: 2;
 }
 
 .dark #links-mobile {

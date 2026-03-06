@@ -55,7 +55,7 @@ import NoteBoard from "../components/NoteBoard.vue";
 import NoteForm from "../components/NoteForm.vue";
 import RecentActivity from "../components/RecentActivity.vue";
 
-import NewCollectionForm from "../components/NewCollectionForm.vue";
+import NewCollectionForm from "../components/CollectionForm.vue";
 import type { Note } from "../models/note";
 import type { defaultCollectionId } from "../db/idb";
 
