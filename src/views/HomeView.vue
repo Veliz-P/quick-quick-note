@@ -48,9 +48,10 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, onMounted } from "vue";
 import { FilePlusCorner, FolderPlus } from "lucide-vue-next";
 import type { FormMode } from "../types/form.mode";
+import { NoteService } from "../services/notes.servic";
 import NoteBoard from "../components/NoteBoard.vue";
 import NoteForm from "../components/NoteForm.vue";
 import RecentActivity from "../components/RecentActivity.vue";
@@ -95,6 +96,10 @@ function openNoteForm(
   collection = noteCollection;
   note = selectedNote;
 }
+
+onMounted(async () => {
+  await NoteService.clearExpiredNotes();
+});
 </script>
 <style scoped>
 h1 {

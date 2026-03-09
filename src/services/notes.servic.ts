@@ -165,4 +165,27 @@ export class NoteService {
     await tx.done;
     return count;
   }
+
+  static async clearExpiredNotes() {
+    const db = await dbPromise;
+    const tx = db.transaction(stores.NOTES, "readwrite");
+    const store = tx.objectStore(stores.NOTES);
+    const idx = store.index("byCollectionId");
+    const now = new Date();
+    const temporaryNotesCollection = 2;
+    const range = IDBKeyRange.bound(
+      [temporaryNotesCollection, 0],
+      [temporaryNotesCollection, Infinity],
+    );
+
+    let cursor = await idx.openCursor(range);
+    while (cursor) {
+      const note: Note = cursor.value;
+      if (new Date(note.expiresAt!).getTime() < now.getTime()) {
+        await store.delete(note.id!);
+      }
+      cursor = await cursor.continue();
+    }
+    await tx.done;
+  }
 }
