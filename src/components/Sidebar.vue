@@ -98,9 +98,9 @@ import { ref } from "vue";
 import {
   Home,
   NotebookPen,
-  Info,
-  Trash2,
-  Settings,
+  // Info,
+  // Trash2,
+  // Settings,
   MenuIcon,
   ChevronUp,
 } from "lucide-vue-next";
