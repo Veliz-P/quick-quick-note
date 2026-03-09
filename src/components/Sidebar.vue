@@ -19,7 +19,7 @@
           notas
         </li>
       </router-link>
-      <router-link to="/">
+      <!-- <router-link to="/">
         <li class="link-item">
           <Trash2 />
           Papelera
@@ -30,15 +30,15 @@
           <Info />
           App Info
         </li>
-      </router-link>
+      </router-link> -->
     </ul>
 
-    <router-link to="/" id="settings">
+    <!-- <router-link to="/" id="settings">
       <div class="link-item">
         <Settings />
         Ajustes
       </div>
-    </router-link>
+    </router-link> -->
   </nav>
 
   <nav id="sidebar-mobile">
@@ -72,7 +72,7 @@
           Colecciones y notas
         </li>
       </router-link>
-      <router-link to="/" @click="closeMenu">
+      <!-- <router-link to="/" @click="closeMenu">
         <li class="link-item">
           <Trash2 />
           Papelera
@@ -88,7 +88,7 @@
         <li>
           <button id="settings-btn-mobile"><Settings /> Ajustes</button>
         </li>
-      </router-link>
+      </router-link> -->
     </ul>
   </nav>
 </template>
