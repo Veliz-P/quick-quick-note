@@ -5,6 +5,8 @@ El proyecto está actualmente en **fase beta**, por lo que algunas funcionalidad
 
 La aplicación permite gestionar notas de forma simple y rápida directamente en el navegador, sin necesidad de servicios externos.
 
+**[Clic aquí para ir a la app.](https://veliz-p.github.io/quick-quick-note/#/home)**
+
 ## Características
 
 - Crear y editar notas
@@ -37,3 +39,4 @@ El proyecto se encuentra en **fase beta**, por lo que:
 - Panel de configuraciones.
 - Limpieza más eficiente de notas expiradas.
 - Modo offline.
+
