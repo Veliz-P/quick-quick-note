@@ -64,13 +64,14 @@
   </section>
 </template>
 <script setup lang="ts">
-import { onMounted, computed } from "vue";
+import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useActionEventStore } from "../stores/useActionEventStore";
 const { actions } = storeToRefs(useActionEventStore());
+import { Plus, Trash, FolderInput } from "lucide-vue-next";
 import type { FunctionalComponent } from "vue";
 import type { ActionEvent, ActionEventType } from "../types/action.event";
-import { Plus, Trash, FolderInput } from "lucide-vue-next";
+
 const activityIcons: Record<ActionEventType, FunctionalComponent> = {
   note_created: Plus,
   note_hard_deleted: Trash,
@@ -79,10 +80,7 @@ const activityIcons: Record<ActionEventType, FunctionalComponent> = {
   collection_hard_deleted: Trash,
   collection_soft_deleted: FolderInput,
 };
-
-function getIcon(eventType: ActionEventType) {
-  return activityIcons[eventType];
-}
+const getIcon = (eventType: ActionEventType) => activityIcons[eventType];
 
 const activityClasses: Record<ActionEventType, string> = {
   note_created: "created",
@@ -92,18 +90,22 @@ const activityClasses: Record<ActionEventType, string> = {
   collection_hard_deleted: "hard-deleted",
   collection_soft_deleted: "soft-deleted",
 };
+const getIconClass = (eventType: ActionEventType) => activityClasses[eventType];
 
-function getIconClass(eventType: ActionEventType) {
-  return activityClasses[eventType];
-}
-
-type DateGroup = "today" | "thisWeek" | "lastWeek" | "thisMonth" | "thisYear";
+type DateGroup =
+  | "today"
+  | "yesterday"
+  | "thisWeek"
+  | "lastWeek"
+  | "thisMonth"
+  | "thisYear";
 
 type SortedEvents = Record<DateGroup | string, ActionEvent[] | null>;
 
 const calcSortedEvents = computed(() => {
   const sortedEvents: SortedEvents = {
     today: [],
+    yesterday: [],
     thisWeek: [],
     lastWeek: [],
     thisMonth: [],
@@ -116,6 +118,8 @@ const calcSortedEvents = computed(() => {
     if (eventDate.toLocaleString() === "Invalid Date") return;
 
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
     const week = new Date(today);
     week.setDate(week.getDate() - week.getDay());
     const lastWeek = new Date(today);
@@ -124,7 +128,9 @@ const calcSortedEvents = computed(() => {
 
     if (eventDate >= today) {
       sortedEvents.today?.push(action);
-    } else if (eventDate >= week) {
+    } else if (eventDate >= yesterday && eventDate < today) {
+      sortedEvents.yesterday?.push(action);
+    } else if (eventDate >= week && eventDate < yesterday) {
       sortedEvents.thisWeek?.push(action);
     } else if (eventDate >= lastWeek) {
       sortedEvents.lastWeek?.push(action);
@@ -143,7 +149,6 @@ const calcSortedEvents = computed(() => {
 
 function isSortedEventsEmpty(sortedEvents: SortedEvents): boolean {
   if (!sortedEvents) return true;
-
   return (
     sortedEvents.today?.length === 0 &&
     sortedEvents.thisWeek?.length === 0 &&
@@ -155,17 +160,13 @@ function isSortedEventsEmpty(sortedEvents: SortedEvents): boolean {
 
 const groupTranslation: Record<DateGroup, string> = {
   today: "Hoy",
+  yesterday: "Ayer",
   thisWeek: "Esta semana",
   lastWeek: "La semana pasada",
   thisMonth: "Este mes",
   thisYear: "Este año",
 };
-
-function getGroupTranslation(group: DateGroup) {
-  return groupTranslation[group] || "";
-}
-
-onMounted(() => {});
+const getGroupTranslation = (group: DateGroup) => groupTranslation[group];
 </script>
 <style scoped>
 #recent-actions-section {
@@ -293,7 +294,7 @@ h2 {
 
 @media (min-width: 1024px) {
   #recent-actions-section {
-    width: 650px;
+    width: 550px;
   }
 
   #recent-actions-container {

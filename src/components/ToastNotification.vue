@@ -18,9 +18,9 @@
 <script lang="ts" setup>
 import { Check, AlertTriangle, XCircle, Info, X } from "lucide-vue-next";
 import { computed } from "vue";
-import type { ToastType } from "../types/notification.type";
 import { useToastStore } from "../stores/useToastStore";
 const { closeToast } = useToastStore();
+import type { ToastType } from "../types/notification.type";
 
 interface Props {
   message?: string;

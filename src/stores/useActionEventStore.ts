@@ -55,10 +55,7 @@ export const useActionEventStore = defineStore(
       applyLimit();
       sortByDate();
     }
-
-    function getActions(): ActionEvent[] {
-      return actions.value;
-    }
+    const getActions = (): ActionEvent[] => actions.value;
 
     return { actions, register, getActions };
   },

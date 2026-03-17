@@ -5,7 +5,6 @@
       <FolderPlus class="icon" />
     </h2>
     <h3>Organice sus notas en colecciones personalizadas.</h3>
-
     <form id="collection-form" @submit.prevent="submitForm">
       <div>
         <input
@@ -21,7 +20,6 @@
           La colección ya existe
         </p>
       </div>
-
       <div class="submit-options">
         <button class="btn-secondary" type="button" @click="closeForm">
           Cancelar
@@ -39,9 +37,9 @@ import { debounce } from "../utils/debounce";
 import { useToastStore } from "../stores/useToastStore";
 const { showToast } = useToastStore();
 import { useActionEventStore } from "../stores/useActionEventStore";
+const actionEventStore = useActionEventStore();
 import type { FormMode } from "../types/form.mode";
 import type { Collection } from "../models/collection";
-const actionEventStore = useActionEventStore();
 
 const collection = reactive<Collection>({
   id: null,
