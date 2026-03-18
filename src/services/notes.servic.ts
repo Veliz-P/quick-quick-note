@@ -56,7 +56,7 @@ export class NoteService {
   static async getNotes(
     collection: number = 1, // 1 is default collection
     pageSize: number = 30,
-    lastKey: [number, number] | null = null,
+    lastKey: [number, string] | null = null,
     onlyDeleted: boolean = false,
   ): Promise<PaginatedResult<Note>> {
     if (collection && collection <= 0) throw new Error("Invalid collection id");
@@ -67,29 +67,31 @@ export class NoteService {
     }
     const tx = db.transaction(stores.NOTES, "readonly");
     const store = tx.objectStore(stores.NOTES);
-    const index = store.index("byCollectionId");
+    const index = store.index("byCollectionCreated");
+    const now = new Date().toISOString();
     let cursor = null;
+
     if (lastKey) {
-      const [lastCollection, lastId] = lastKey;
+      const [lastCollection, lastDate] = lastKey;
       const range = IDBKeyRange.bound(
-        [lastCollection, lastId],
-        [lastCollection, Infinity],
-        true, // exlude last key
-        false,
+        [collection, ""],
+        [lastCollection, lastDate],
+        true,
+        true,
       );
-      cursor = await index.openCursor(range);
+      cursor = await index.openCursor(range, "prev");
     } else {
-      const range = IDBKeyRange.bound([collection, 0], [collection, Infinity]);
-      cursor = await index.openCursor(range);
+      const range = IDBKeyRange.bound([collection, ""], [collection, now]);
+      cursor = await index.openCursor(range, "prev");
     }
 
     let notes: Note[] = [];
-    let newLastKey: [number, number] | null = null;
+    let newLastKey: [number, string] | null = null;
     while (cursor && notes.length < pageSize) {
       const note: Note = cursor.value;
       if (note.isDeleted === onlyDeleted) {
         notes.push(note);
-        newLastKey = [note.collectionId, note.id!];
+        newLastKey = [note.collectionId, note.createdAt];
       }
       cursor = await cursor.continue();
     }
