@@ -24,23 +24,9 @@
         <FilePlusCorner /> Crear nota temporal
       </button>
       <div id="temporary-notes-container">
-        <NoteBoard
-          @open-form="openNoteForm('edit', true, 2, $event)"
-          :collection="collection"
-          :should-reload="shouldReloadNotes"
-        />
+        <NoteBoard :collection="collection" />
       </div>
     </section>
-  </div>
-  <div v-if="visibleNoteForm" id="note-form-container">
-    <NoteForm
-      @close-form="visibleNoteForm = false"
-      @should-reload="requestReload"
-      :form-mode="formMode"
-      :is-temporary="isTemporary"
-      :collection="collection"
-      :note="note"
-    />
   </div>
 
   <div id="new-collection-form-container" v-if="visibleNewCollectionForm">
@@ -48,53 +34,32 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { FilePlusCorner, FolderPlus } from "lucide-vue-next";
-import type { FormMode } from "../types/form.mode";
 import { NoteService } from "../services/notes.servic";
 import NoteBoard from "../components/NoteBoard.vue";
-import NoteForm from "../components/NoteForm.vue";
 import RecentActivity from "../components/RecentActivity.vue";
-
 import NewCollectionForm from "../components/CollectionForm.vue";
-import type { Note } from "../models/note";
+import { useNoteFormStore } from "../stores/useNoteFormStore";
 import type { defaultCollectionId } from "../db/idb";
+import type { FormMode } from "../types/form.mode";
+import type { NoteFormStoreOptions } from "../types/note.form.options";
 
-const visibleNoteForm = ref(false);
-let formMode: FormMode = "create";
-let isTemporary = false;
+const { openForm } = useNoteFormStore();
 let collection: number | defaultCollectionId = 2; // 2 is temporary collection
-let note: Note | null = null;
-let shouldReloadNotes = ref(false);
 const visibleNewCollectionForm = ref(false);
 
-function requestReload() {
-  shouldReloadNotes.value = true;
-  collection = 2; // 2 is temporary collection
-}
-
-watch(
-  () => shouldReloadNotes.value,
-  (newVal) => {
-    if (newVal) {
-      setTimeout(() => {
-        shouldReloadNotes.value = false;
-      }, 200);
-    }
-  },
-);
-
 function openNoteForm(
-  mode: FormMode,
-  isTemporaryNote: boolean,
-  noteCollection: number,
-  selectedNote: Note | null = null,
+  formMode: FormMode,
+  isTemporary: boolean,
+  collectionId: number,
 ) {
-  visibleNoteForm.value = true;
-  formMode = mode;
-  isTemporary = isTemporaryNote;
-  collection = noteCollection;
-  note = selectedNote;
+  const opts: NoteFormStoreOptions = {
+    isTemporary: isTemporary,
+    collectionId,
+    formMode,
+  };
+  openForm(opts);
 }
 
 onMounted(async () => {

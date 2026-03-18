@@ -84,9 +84,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from "vue";
+import { storeToRefs } from "pinia";
 import { NoteService } from "../services/notes.servic";
-import type { PaginatedResult } from "../types/paginated.result";
-import type { Note } from "../models/note";
 import { ColorService } from "../services/colors.servic";
 import { formatDate, formatHour, formatTimeLeft } from "../utils/date";
 import {
@@ -97,14 +96,21 @@ import {
   NotepadText,
 } from "lucide-vue-next";
 import { useToastStore } from "../stores/useToastStore";
-const { showToast } = useToastStore();
+import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
+import { useActionEventStore } from "../stores/useActionEventStore";
+import { useNoteFormStore } from "../stores/useNoteFormStore";
+import Grid from "vue-virtual-scroll-grid";
+import type { PaginatedResult } from "../types/paginated.result";
+import type { Note } from "../models/note";
 import type { ConfirmationDialogOptions } from "../types/confirmation.options";
 import type { defaultCollectionId } from "../db/idb";
-import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
+import type { NoteFormStoreOptions } from "../types/note.form.options";
+
+const { showToast } = useToastStore();
 const { confirm } = useConfirmationDialogStore();
-import { useActionEventStore } from "../stores/useActionEventStore";
 const actionEventStore = useActionEventStore();
-import Grid from "vue-virtual-scroll-grid";
+const { shouldReload } = storeToRefs(useNoteFormStore());
+const { openForm } = useNoteFormStore();
 
 const permanentDeleteOpts: ConfirmationDialogOptions = {
   question: "¿Estás seguro de que quieres borrar esta nota?",
@@ -121,6 +127,13 @@ let isLoading = false;
 const notesLength = ref(0);
 const realNotesLength = ref(0); // It will determine if grid or empty state should be rendered
 const shouldRenderGrid = ref(true);
+
+interface Props {
+  collection?: number | defaultCollectionId;
+}
+const props = withDefaults(defineProps<Props>(), {
+  collection: 1, // 1 is default collection
+});
 
 async function fetchNotes() {
   const cursor = (currentCursor as [number, number]) || undefined;
@@ -177,29 +190,13 @@ async function refreshNotes() {
   shouldRenderGrid.value = false;
   timeout = setTimeout(() => {
     shouldRenderGrid.value = true;
-  }, 100);
+  }, 50);
 }
-
-interface Props {
-  collection?: number | defaultCollectionId;
-  shouldReload?: boolean;
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  collection: 1, // 1 is default collection
-  shouldReload: false,
-});
-
-interface Emits {
-  (e: "open-form", note: Note): void;
-}
-
-const emit = defineEmits<Emits>();
 
 const deletePermanently = ref(false);
 
 watch(
-  () => props.shouldReload,
+  () => shouldReload.value,
   async (newVal) => {
     if (newVal) {
       await refreshNotes();
@@ -237,7 +234,13 @@ function openNoteForm(note: Note) {
   activeId.value = null;
   let formatedNote = { ...note } as NoteCard;
   delete formatedNote.color;
-  emit("open-form", formatedNote);
+  const opts: NoteFormStoreOptions = {
+    isTemporary: props.collection === 2, // 2 is temporary collection
+    note: formatedNote,
+    collectionId: props.collection,
+    formMode: "edit",
+  };
+  openForm(opts);
 }
 
 async function duplicateNote(note: Note) {

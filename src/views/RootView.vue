@@ -7,13 +7,18 @@
       <RouterView />
     </div>
   </div>
-
   <div id="toast-container" v-show="showingToast">
     <ToastNotification :message="toastMessage" :type="toastType" />
   </div>
-
-  <div id="confirmation-dialog-container" class="popup-layout" v-show="isOpen">
+  <div
+    id="confirmation-dialog-container"
+    class="popup-layout"
+    v-show="isConfirmationDialogOpen"
+  >
     <ConfirmationPopup />
+  </div>
+  <div id="note-form-container" class="popup-layout" v-if="isNoteFormOpen">
+    <NoteForm />
   </div>
 </template>
 
@@ -21,12 +26,17 @@
 import Sidebar from "../components/Sidebar.vue";
 import ToastNotification from "../components/ToastNotification.vue";
 import ConfirmationPopup from "../components/ConfirmationPopup.vue";
+import NoteForm from "../components/NoteForm.vue";
 import { RouterView } from "vue-router";
 import { useToastStore } from "../stores/useToastStore";
 import { storeToRefs } from "pinia";
 import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
-const { isOpen } = storeToRefs(useConfirmationDialogStore());
+import { useNoteFormStore } from "../stores/useNoteFormStore";
 
+const { isOpen: isNoteFormOpen } = storeToRefs(useNoteFormStore());
+const { isOpen: isConfirmationDialogOpen } = storeToRefs(
+  useConfirmationDialogStore(),
+);
 const { toastMessage, toastType, showingToast } = storeToRefs(useToastStore());
 </script>
 

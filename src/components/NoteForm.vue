@@ -1,11 +1,15 @@
 <template>
   <div class="wrapper" :style="{ backgroundColor: wrapperColor }">
-    <button id="close-form-btn" @click="emit('closeForm')">
+    <button id="close-form-btn" @click="closeForm()">
       <X :size="20" :stroke-width="2.5" />
     </button>
     <div class="card">
+      <h2 class="form-header">
+        {{ formMode === "create" ? "Nueva nota" : "Editar nota" }}
+        <FilePlusCorner :size="23" class="form-icon" />
+      </h2>
       <form @submit.prevent="submitForm">
-        <div id="title-container" style="position: relative; width: 100%">
+        <div id="title-container">
           <label for="title-input"
             ><Paperclip :size="20" id="paperclip-icon"
           /></label>
@@ -48,7 +52,7 @@
             :required="includeDescription"
           ></textarea>
         </div>
-        <div v-if="props.isTemporary">
+        <div v-if="options.isTemporary">
           <label id="expiration-label" for="" class="subtitle">
             <Calendar1 :size="20" /> Expiración
           </label>
@@ -81,17 +85,18 @@
 </template>
 <script setup lang="ts">
 import { reactive, ref, onMounted, watch, type Ref } from "vue";
+import { storeToRefs } from "pinia";
 import { ColorService } from "../services/colors.servic";
 import { ExpirationNoteService } from "../services/expiration.note.servic";
-import type { FormMode } from "../types/form.mode";
-import type { Note } from "../models/note";
-import type { defaultCollectionId } from "../db/idb";
 import { NoteService } from "../services/notes.servic";
 import { buildDate, getOnlyDate, formatHour } from "../utils/date";
 import { useToastStore } from "../stores/useToastStore";
-const { showToast } = useToastStore();
 import { useActionEventStore } from "../stores/useActionEventStore";
+import { useNoteFormStore } from "../stores/useNoteFormStore";
+const { showToast } = useToastStore();
 const actionEventStore = useActionEventStore();
+const { options } = storeToRefs(useNoteFormStore());
+const { closeForm } = useNoteFormStore();
 import {
   Paperclip,
   Save,
@@ -99,30 +104,14 @@ import {
   RotateCcw,
   Calendar1,
   X,
+  FilePlusCorner,
 } from "lucide-vue-next";
-
-interface Props {
-  isTemporary?: boolean;
-  formMode?: FormMode;
-  collection?: number | defaultCollectionId;
-  note?: Note | null;
-}
-const props = withDefaults(defineProps<Props>(), {
-  isTemporary: false,
-  formMode: "create",
-  collection: 1,
-  note: null,
-});
-
-interface Emits {
-  (e: "closeForm"): void;
-  (e: "shouldReload"): void;
-}
-const emit = defineEmits<Emits>();
+import type { FormMode } from "../types/form.mode";
+import type { Note } from "../models/note";
 
 const note: Note = reactive({
   id: null,
-  collectionId: props.collection,
+  collectionId: options.value.collectionId as number,
   title: "",
   description: "",
   createdAt: "",
@@ -143,7 +132,7 @@ function clearForm() {
   note.description = "";
   note.createdAt = "";
   note.expiresAt = "";
-  includeDescription.value = true;
+  includeDescription.value = false;
   expirationDate.value = "";
   expirationTime.value = "";
   formMode.value = "create";
@@ -195,7 +184,7 @@ function generateExpirationDate(): string {
 
 async function submitForm() {
   let result: Note | null = null;
-  if (props.isTemporary) {
+  if (options.value.isTemporary) {
     note.expiresAt = generateExpirationDate();
     if (invalidDate.value) {
       showToast("info", "Corriga la fecha antes de guardar");
@@ -225,25 +214,27 @@ async function submitForm() {
       note.id = result.id;
       note.createdAt = result.createdAt;
       showToast("success", message);
+      closeForm(true);
     }
   } catch (error) {
     console.error(error);
     showToast("error", "Ocurrió un error al guardar la nota");
   }
-  emit("shouldReload");
+  // emit("shouldReload");
 }
 
 function preFillForm() {
-  if (!props.note) return;
-  note.id = props.note.id;
-  note.title = props.note.title;
-  note.description = props.note.description;
-  note.createdAt = props.note.createdAt;
-  note.collectionId = props.note.collectionId;
+  if (!options.value.note) return;
+  const noteInfo = options.value.note;
+  note.id = noteInfo.id;
+  note.title = noteInfo.title;
+  note.description = noteInfo.description;
+  note.createdAt = noteInfo.createdAt;
+  note.collectionId = options.value.collectionId as number;
 
-  if (props.isTemporary && props.note.expiresAt) {
-    note.expiresAt = props.note.expiresAt;
-    const date = new Date(props.note.expiresAt);
+  if (options.value.isTemporary && noteInfo.expiresAt) {
+    note.expiresAt = noteInfo.expiresAt;
+    const date = new Date(note.expiresAt);
     expirationDate.value = getOnlyDate(date) || "";
     expirationTime.value = formatHour(date.toISOString()) || "";
   }
@@ -253,7 +244,7 @@ function preFillForm() {
 
 onMounted(() => {
   wrapperColor.value = ColorService.getRandomColor();
-  formMode.value = props.formMode || "create";
+  formMode.value = options.value.formMode as FormMode;
   preFillForm();
 });
 </script>
@@ -271,7 +262,7 @@ onMounted(() => {
 .wrapper {
   position: relative;
   width: 95%;
-  max-width: 550px;
+  max-width: 600px;
   padding: var(--space-6) var(--space-3);
   border-radius: var(--rounded-xl);
   box-shadow: var(--shadow-xl);
@@ -300,6 +291,8 @@ textarea {
   border: none;
   border-radius: 0px;
   border-bottom: 2px solid var(--border);
+  position: relative;
+  width: 100%;
 }
 
 #title-container:has(input:focus) {
@@ -395,7 +388,7 @@ label {
 
 @media (min-width: 768px) {
   .wrapper {
-    max-height: 650px;
+    max-height: 700px;
     width: 100%;
   }
   #expiration-options {

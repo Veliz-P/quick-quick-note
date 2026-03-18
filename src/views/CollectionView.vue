@@ -19,13 +19,8 @@
         <FilePlusCorner /> Crear nota
       </button>
     </div>
-
     <div v-if="currentCollection" class="notes-container">
-      <NoteBoard
-        :collection="currentCollection?.id!"
-        @open-form="openEditNoteForm"
-        :should-reload="shouldReloadNotes"
-      />
+      <NoteBoard :collection="currentCollection?.id!" />
     </div>
     <div v-else class="no-current-collection-state">
       <img
@@ -35,69 +30,34 @@
       />
       <p>Seleccione cualquier colección de la lista para ver sus notas.</p>
     </div>
-
-    <div class="popup-layout" v-if="visibleNoteForm">
-      <NoteForm
-        v-if="visibleNoteForm"
-        :collection="currentCollection?.id!"
-        :isTemporary="false"
-        :form-mode="formMode"
-        @close-form="visibleNoteForm = false"
-        :note="selectedNote"
-        @should-reload="requestReload"
-      />
-    </div>
   </div>
 </template>
 <script setup lang="ts">
 import CollectionList from "../components/CollectionList.vue";
 import NoteBoard from "../components/NoteBoard.vue";
-import NoteForm from "../components/NoteForm.vue";
-import { ref, watch } from "vue";
-import type { Note } from "../models/note";
-import type { FormMode } from "../types/form.mode";
-import type { Collection } from "../models/collection";
+import { ref } from "vue";
 import { FilePlusCorner, ChevronRight } from "lucide-vue-next";
+import { useNoteFormStore } from "../stores/useNoteFormStore";
+import type { Collection } from "../models/collection";
+import type { NoteFormStoreOptions } from "../types/note.form.options";
+
 const currentCollection = ref<Collection | null>(null);
-const visibleNoteForm = ref(false);
-const selectedNote = ref<Note | null>(null);
-let formMode: FormMode = "create";
-const shouldReloadNotes = ref(false);
+const { openForm } = useNoteFormStore();
 
 function setCurrentCollection(collection: Collection) {
   if (!collection) return;
   currentCollection.value = collection;
 }
 
-function openEditNoteForm(note: Note) {
-  if (!note) return;
-  visibleNoteForm.value = true;
-  formMode = "edit";
-  selectedNote.value = note;
-}
-
 function openCreateNoteForm() {
-  visibleNoteForm.value = true;
-  formMode = "create";
-  selectedNote.value = null;
+  const opts: NoteFormStoreOptions = {
+    isTemporary: false,
+    note: null,
+    collectionId: currentCollection.value?.id!,
+    formMode: "create",
+  };
+  openForm(opts);
 }
-
-let timer: number | null = null;
-function requestReload() {
-  shouldReloadNotes.value = true;
-}
-
-watch(
-  () => shouldReloadNotes.value,
-  (newVal) => {
-    if (newVal) {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        shouldReloadNotes.value = false;
-      }, 200);
-    }
-  },
-);
 </script>
 
 <style scoped>

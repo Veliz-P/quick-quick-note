@@ -1,8 +1,8 @@
 <template>
   <div class="new-collection-form-container">
-    <h2>
+    <h2 class="form-header">
       {{ props.formMode === "create" ? "Nueva colección" : "Editar colección" }}
-      <FolderPlus class="icon" />
+      <FolderPlus :size="23" class="form-icon" />
     </h2>
     <h3>Organice sus notas en colecciones personalizadas.</h3>
     <form id="collection-form" @submit.prevent="submitForm">
@@ -137,14 +137,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   width: 90%;
-}
-
-.new-collection-form-container h2 {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--fs-md);
-  margin-bottom: var(--space-1);
 }
 
 h3 {
