@@ -11,17 +11,8 @@ export const useActionEventStore = defineStore(
 
     function applyLimit() {
       if (actions.value.length > LIMIT) {
-        actions.value = actions.value.slice(-LIMIT);
+        actions.value = actions.value.slice(0, LIMIT);
       }
-    }
-
-    function sortByDate() {
-      if (!actions.value) return;
-      actions.value.sort((a, b) => {
-        const dateA = new Date(a.timestamp);
-        const dateB = new Date(b.timestamp);
-        return dateB.getTime() - dateA.getTime();
-      });
     }
 
     function register(type: ActionEventType) {
@@ -51,9 +42,8 @@ export const useActionEventStore = defineStore(
         timestamp: new Date().toISOString(),
         textContent,
       };
-      actions.value.push(actionEvent);
+      actions.value.unshift(actionEvent);
       applyLimit();
-      sortByDate();
     }
     const getActions = (): ActionEvent[] => actions.value;
 

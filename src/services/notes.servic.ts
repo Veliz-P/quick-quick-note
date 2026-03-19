@@ -1,7 +1,6 @@
 import { NoteRepository } from "../repositories/note.repository";
 import { CollectionRepository } from "../repositories/collection.repository";
 import { useActionEventStore } from "../stores/useActionEventStore";
-const { register: registerEvent } = useActionEventStore();
 import type { PaginatedResult } from "../types/paginated.result";
 import type { Note } from "../models/note";
 
@@ -18,6 +17,7 @@ export class NoteService {
     const foundCollection = await CollectionRepository.get(collection);
     if (!foundCollection) throw new Error("Collection not found");
     const result = await NoteRepository.create(note);
+    const { register: registerEvent } = useActionEventStore();
     registerEvent("note_created");
     return result;
   }
@@ -63,12 +63,14 @@ export class NoteService {
   static async softDeleteNote(id: number) {
     if (!id || id <= 0) throw new Error("Invalid note id");
     await NoteRepository.softDelete(id);
+    const { register: registerEvent } = useActionEventStore();
     registerEvent("note_soft_deleted");
   }
 
   static async deleteNote(id: number) {
     if (!id || id <= 0) throw new Error("Invalid note id");
     await NoteRepository.permanentDelete(id);
+    const { register: registerEvent } = useActionEventStore();
     registerEvent("note_hard_deleted");
   }
 

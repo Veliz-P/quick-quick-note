@@ -1,6 +1,5 @@
 import { CollectionRepository } from "../repositories/collection.repository";
 import { useActionEventStore } from "../stores/useActionEventStore";
-const { register: registerEvent } = useActionEventStore();
 import type { Collection } from "../models/collection";
 import type { PaginatedResult } from "../types/paginated.result";
 
@@ -17,6 +16,7 @@ export class CollectionService {
     if (await CollectionRepository.exists(collectionName))
       throw new Error("Collection already exists");
     const result = await CollectionRepository.create(collectionName);
+    const { register: registerEvent } = useActionEventStore();
     registerEvent("collection_created");
     return result;
   }
@@ -67,6 +67,7 @@ export class CollectionService {
   static async softDeleteCollection(id: number) {
     if (!id || id <= 0) throw new Error("Invalid collection id");
     await CollectionRepository.softDelete(id);
+    const { register: registerEvent } = useActionEventStore();
     registerEvent("collection_soft_deleted");
   }
 
@@ -76,6 +77,7 @@ export class CollectionService {
     const collectionDetail = await CollectionRepository.get(id);
     if (!collectionDetail) throw new Error("Collection not found");
     await CollectionRepository.permanentDelete(id);
+    const { register: registerEvent } = useActionEventStore();
     registerEvent("collection_hard_deleted");
   }
 
