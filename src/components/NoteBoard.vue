@@ -97,7 +97,6 @@ import {
 } from "lucide-vue-next";
 import { useToastStore } from "../stores/useToastStore";
 import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
-import { useActionEventStore } from "../stores/useActionEventStore";
 import { useNoteFormStore } from "../stores/useNoteFormStore";
 import Grid from "vue-virtual-scroll-grid";
 import type { PaginatedResult } from "../types/paginated.result";
@@ -108,7 +107,6 @@ import type { NoteFormStoreOptions } from "../types/note.form.options";
 
 const { showToast } = useToastStore();
 const { confirm } = useConfirmationDialogStore();
-const actionEventStore = useActionEventStore();
 const { shouldReload } = storeToRefs(useNoteFormStore());
 const { openForm } = useNoteFormStore();
 
@@ -136,7 +134,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 async function fetchNotes() {
-  const cursor = (currentCursor as [number, number]) || undefined;
+  const cursor = (currentCursor as [number, string]) || undefined;
   const result: PaginatedResult<Note> = await NoteService.getNotes(
     props.collection,
     pageSize,
@@ -265,13 +263,11 @@ async function deleteNote() {
     if (!deletePermanently.value) {
       await NoteService.softDeleteNote(deleteNoteId);
       showToast("success", "Nota movida a papelera");
-      actionEventStore.register("note_soft_deleted");
     } else {
       const ok = await confirm(permanentDeleteOpts);
       if (!ok) return;
       await NoteService.deleteNote(deleteNoteId);
       showToast("success", "Nota borrada permanentemente");
-      actionEventStore.register("note_hard_deleted");
     }
     toggleExtraOptions();
     await refreshNotes();

@@ -91,10 +91,8 @@ import { ExpirationNoteService } from "../services/expiration.note.servic";
 import { NoteService } from "../services/notes.servic";
 import { buildDate, getOnlyDate, formatHour } from "../utils/date";
 import { useToastStore } from "../stores/useToastStore";
-import { useActionEventStore } from "../stores/useActionEventStore";
 import { useNoteFormStore } from "../stores/useNoteFormStore";
 const { showToast } = useToastStore();
-const actionEventStore = useActionEventStore();
 const { options } = storeToRefs(useNoteFormStore());
 const { closeForm } = useNoteFormStore();
 import {
@@ -207,9 +205,6 @@ async function submitForm() {
         formMode.value === "create"
           ? "Nota creada exitosamente"
           : "Nota actualizada exitosamente";
-      if (formMode.value === "create") {
-        actionEventStore.register("note_created");
-      }
       formMode.value = "edit";
       note.id = result.id;
       note.createdAt = result.createdAt;

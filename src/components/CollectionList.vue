@@ -101,8 +101,6 @@ import {
 import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
 const { confirm } = useConfirmationDialogStore();
 import type { ConfirmationDialogOptions } from "../types/confirmation.options";
-import { useActionEventStore } from "../stores/useActionEventStore";
-const actionEventStore = useActionEventStore();
 import { useToastStore } from "../stores/useToastStore";
 import type { FormMode } from "../types/form.mode";
 const { showToast } = useToastStore();
@@ -180,13 +178,11 @@ async function deleteCollection() {
     if (!deletePermanently.value) {
       await CollectionService.softDeleteCollection(deleteCollectionId);
       showToast("success", "Colección movida a papelera");
-      actionEventStore.register("collection_soft_deleted");
     } else {
       const ok = await confirm(permanentDeleteOpts);
       if (!ok) return;
       await CollectionService.deleteCollection(deleteCollectionId);
       showToast("success", "Colección borrada permanentemente");
-      actionEventStore.register("collection_hard_deleted");
     }
     removeCollectionNode();
     toggleExtraOptions();

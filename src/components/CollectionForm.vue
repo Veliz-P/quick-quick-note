@@ -36,8 +36,6 @@ import { ref, watch, reactive, onMounted, toRaw } from "vue";
 import { debounce } from "../utils/debounce";
 import { useToastStore } from "../stores/useToastStore";
 const { showToast } = useToastStore();
-import { useActionEventStore } from "../stores/useActionEventStore";
-const actionEventStore = useActionEventStore();
 import type { FormMode } from "../types/form.mode";
 import type { Collection } from "../models/collection";
 
@@ -99,7 +97,6 @@ async function submitForm() {
       );
       if (collectionCreated && collectionCreated.id) {
         showToast("success", "Colección creada exitosamente");
-        actionEventStore.register("collection_created");
         emit("shouldReload");
       }
     } else if (props.formMode == "edit") {
