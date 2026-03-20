@@ -51,7 +51,7 @@
             id="no-activity-icon"
             width="100"
             height="100"
-            src="../assets/svg/no-data.svg"
+            src="../assets/svg/no-recent-actions.svg"
             alt="No activity"
           />
         </div>
@@ -288,7 +288,7 @@ h2 {
 
 #no-activity-icon {
   width: 100%;
-  height: 95px;
+  height: 100px;
   object-fit: contain;
 }
 
@@ -299,6 +299,10 @@ h2 {
 
   #recent-actions-container {
     max-height: 40vh;
+  }
+
+  #no-activity-icon {
+    height: 125px;
   }
 }
 </style>
