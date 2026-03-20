@@ -1,70 +1,64 @@
 <template>
   <div id="collection-folders">
-    <div class="collection-page">
-      <div id="new-folder-action" class="collection-folder">
-        <button class="tertiary-btn" @click="openForm('create')">
-          <div class="folder-icon"><FolderPlus /></div>
-          Nuevo
-        </button>
-      </div>
+    <div id="new-folder-action" class="collection-folder">
+      <button class="tertiary-btn" @click="openForm('create')">
+        <div class="folder-icon"><FolderPlus /></div>
+        Nuevo
+      </button>
     </div>
+
     <div
-      class="collection-page"
-      v-for="(collectionPage, index) in collectionPages"
-      :key="index"
+      class="collection-folder"
+      v-for="collection in collections"
+      :key="collection.id!"
+      @click="openCollection(collection)"
+      :class="collection.id! === 2 ? 'hidden' : ''"
     >
-      <div
-        class="collection-folder"
-        v-for="(collection, index) in collectionPage"
-        :key="index"
-        @click="openCollection(collection)"
-        :class="collection.id! === 2 ? 'hidden' : ''"
+      <div class="folder-icon">
+        <Folder />
+      </div>
+      <div>
+        <h4>
+          {{
+            collection.name.length > 17
+              ? collection.name.slice(0, 17) + "..."
+              : collection.name
+          }}
+        </h4>
+        <p>{{ formatDate(collection.createdAt) }}</p>
+      </div>
+      <div class="collection-name-popup" v-if="collection.name.length > 17">
+        <p>{{ collection.name }}</p>
+      </div>
+      <!-- !! hide extra options for default collection because it can't be edited  -->
+      <button
+        class="btn-secondary collection-actions-btn"
+        @click.stop="toggleExtraOptions(collection)"
+        v-if="collection.id! !== 1"
       >
-        <div class="folder-icon">
-          <Folder />
-        </div>
-        <div>
-          <h4>
-            {{
-              collection.name.length > 17
-                ? collection.name.slice(0, 17) + "..."
-                : collection.name
-            }}
-          </h4>
-          <p>{{ formatDate(collection.createdAt) }}</p>
-        </div>
-        <div class="collection-name-popup" v-if="collection.name.length > 17">
-          <p>{{ collection.name }}</p>
-        </div>
-        <!-- hide extra options for default collection because it can't be edited -->
-        <button
-          class="btn-secondary collection-actions-btn"
-          @click.stop="toggleExtraOptions(collection)"
-          v-if="collection.id! !== 1"
-        >
-          <Ellipsis :size="20" />
-        </button>
-        <div
-          @click.stop=""
-          v-if="activeId === collection.id"
-          class="extra-options"
-        >
-          <ul>
-            <li @click.stop="openForm('edit', collection)" class="delete-item">
-              <button><FolderPen :size="20" /> Renombrar</button>
-            </li>
-            <li @click.stop="deleteCollection" class="delete-item">
-              <button><Trash2 :size="20" /> Borrar</button>
-            </li>
-            <li>
-              <input v-model="deletePermanently" type="checkbox" />
-              <label>¿Borrar sin papelera?</label>
-            </li>
-          </ul>
-        </div>
+        <Ellipsis :size="20" />
+      </button>
+      <div
+        @click.stop=""
+        v-if="activeId === collection.id"
+        class="extra-options"
+      >
+        <ul>
+          <li @click.stop="openForm('edit', collection)" class="delete-item">
+            <button><FolderPen :size="20" /> Renombrar</button>
+          </li>
+          <li @click.stop="deleteCollection" class="delete-item">
+            <button><Trash2 :size="20" /> Borrar</button>
+          </li>
+          <li>
+            <input v-model="deletePermanently" type="checkbox" />
+            <label>¿Borrar sin papelera?</label>
+          </li>
+        </ul>
       </div>
     </div>
-    <div v-if="collectionPages && hasMore" id="collection-end-list">
+
+    <div v-if="hasMore" id="collection-end-list">
       <div class="spin-item">
         <Loader :size="20" :stroke-width="2.5" />
       </div>
@@ -84,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
 import type { Collection } from "../models/collection";
 import type { PaginatedResult } from "../types/paginated.result";
 import NewCollectionForm from "./CollectionForm.vue";
@@ -118,47 +112,30 @@ const currentCollection = defineModel<Collection | null>("currentCollection", {
   default: null,
 });
 
-const collectionPages = ref<Record<number, CollectionFolder[]>>({});
+const collections = ref<Collection[]>([]);
 let currentCursor: string | null = null;
-let hasMore: boolean = false;
-let isLoading: boolean = false;
+const hasMore = ref(false);
+const isLoading = ref(false);
 const visibleNewCollectionForm = ref(false);
 const activeId = ref<number | null>(null);
 const deletePermanently = ref(false);
-const targetPage = computed((): number | null => {
-  if (!activeId.value) return null;
-  let foundPage: number | null = null;
-  Object.entries(collectionPages.value).forEach(([pageNumber, collections]) => {
-    if (collections.some((collection) => collection.id === activeId.value)) {
-      foundPage = Number(pageNumber);
-      return;
-    }
-  });
-  return foundPage;
-});
 
 function removeCollectionNode() {
-  if (!targetPage.value) return;
-  let collections = collectionPages.value[targetPage.value];
   if (!collections) return;
-  collections = collections.filter(
+  collections.value = collections.value.filter(
     (collection) => collection.id !== activeId.value,
   );
-  collectionPages.value[targetPage.value] = collections;
 }
 
 function updateCollectionNode(collection: Collection) {
-  if (formMode !== "edit" || !targetPage.value) return;
-  let collections = collectionPages.value[targetPage.value];
-  if (!collections) return;
-
-  const targetCollection = collections.find((c) => c.id === collection.id);
+  if (formMode !== "edit" || !collection) return;
+  const targetCollection = collections.value.find(
+    (c) => c.id === collection.id,
+  );
   if (!targetCollection) return;
-  const index = collections.indexOf(targetCollection);
+  const index = collections.value.indexOf(targetCollection);
   targetCollection.name = collection.name;
-
-  collections[index] = targetCollection;
-  collectionPages.value[targetPage.value] = collections;
+  collections.value[index] = targetCollection;
 }
 
 function toggleExtraOptions(collection?: Collection) {
@@ -196,41 +173,26 @@ async function deleteCollection() {
   }
 }
 
-interface CollectionFolder extends Collection {
-  assignedPage: number;
-}
-
 async function fetchCollections() {
-  if (isLoading) return;
-  isLoading = true;
-  const cursor = currentCursor || null;
+  if (isLoading.value) return;
+  isLoading.value = true;
+  const prevCursor = currentCursor || null;
   const result: PaginatedResult<Collection> =
-    await CollectionService.getCollections(cursor, 3);
+    await CollectionService.getCollections(prevCursor);
   currentCursor = result.lastKey as string;
-  hasMore = result.hasMore;
-  const collectionPagesSize = Object.keys(collectionPages.value).length;
-  const formattedCollections: CollectionFolder[] = result.data?.map(
-    (collection) => {
-      return {
-        ...collection,
-        assignedPage: collectionPagesSize + 1,
-      };
-    },
-  );
-  collectionPages.value[collectionPagesSize + 1] = [...formattedCollections];
-  isLoading = false;
+  hasMore.value = result.hasMore;
+  collections.value.push(...result.data);
+  isLoading.value = false;
 }
 
-function openCollection(collection: CollectionFolder) {
-  const { assignedPage, ...chosenCollection } = collection;
-  currentCollection.value = chosenCollection;
+function openCollection(collection: Collection) {
+  currentCollection.value = collection;
 }
 
-function openForm(mode: FormMode, collection?: CollectionFolder) {
+function openForm(mode: FormMode, collection?: Collection) {
   visibleNewCollectionForm.value = true;
   if (collection) {
-    const { assignedPage, ...rawCollection } = collection;
-    collectionUpdate.value = rawCollection;
+    collectionUpdate.value = collection;
   }
   formMode = mode;
 }
@@ -251,13 +213,13 @@ function setInfinteScroll() {
   collectionEndList = document.getElementById("collection-end-list");
   if (!collectionEndList || !container) return;
   const opts = {
-    threshold: 0.1,
     root: container,
-    // rootMargin: "10px",
+    threshold: 0.1,
+    // rootMargin: "0px 200px 0px 0px",
   };
   observer = new IntersectionObserver((entries) => {
     entries.forEach(async (entry) => {
-      if (entry.isIntersecting && hasMore && isLoading == false) {
+      if (entry.isIntersecting && hasMore.value) {
         await fetchCollections();
       }
     });
@@ -267,10 +229,10 @@ function setInfinteScroll() {
 }
 
 async function resetCollectionList() {
-  collectionPages.value = {};
+  collections.value = [];
   currentCursor = null;
-  hasMore = true;
-  isLoading = false;
+  hasMore.value = false;
+  isLoading.value = false;
   await fetchCollections();
   observer?.disconnect();
   setInfinteScroll();
@@ -291,11 +253,7 @@ onMounted(async () => {
   overflow-y: hidden;
   padding-bottom: var(--space-4);
   gap: var(--space-6);
-}
-
-.collection-page {
-  display: flex;
-  gap: var(--space-6);
+  scroll-behavior: smooth;
 }
 
 .collection-folder {
@@ -307,7 +265,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 230px;
+  min-width: 230px;
   height: 150px;
   position: relative;
   transition: border-color 0.2s ease;
@@ -453,7 +411,6 @@ onMounted(async () => {
 }
 
 #collection-end-list {
-  /* color: transparent; */
   padding: var(--space-4);
   color: var(--text-muted);
   display: flex;

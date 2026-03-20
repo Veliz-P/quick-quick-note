@@ -73,21 +73,20 @@ export class CollectionRepository {
 
     let collections: Collection[] = [];
     let cursor = await index.openCursor(range, "prev");
-    let newLastKey: string | null = null;
-    while (cursor && collections.length < pageSize) {
+    while (cursor && collections.length < pageSize + 1) {
       if (cursor.value.isDeleted === onlyDeleted) {
         collections.push(cursor.value);
-        newLastKey = (cursor.key as string) || null;
       }
       cursor = await cursor.continue();
     }
     await tx.done;
-
+    const resultData = collections.slice(0, pageSize);
+    let newLastKey = resultData[resultData.length - 1]?.createdAt || null;
     return {
-      data: collections,
+      data: resultData,
       pageSize,
       lastKey: newLastKey,
-      hasMore: newLastKey !== null && collections.length === pageSize,
+      hasMore: collections.length > pageSize,
     };
   }
 
