@@ -5,10 +5,7 @@
       <p>Cree colecciones personalizadas para guardar sus notas.</p>
     </header>
     <div class="collection-container">
-      <CollectionList
-        @open-collection-notes="setCurrentCollection"
-        @no-collection-selected="currentCollection = null"
-      />
+      <CollectionList v-model:current-collection="currentCollection" />
     </div>
     <div
       class="current-collection-title"
@@ -43,11 +40,6 @@ import type { NoteFormStoreOptions } from "../types/note.form.options";
 
 const currentCollection = ref<Collection | null>(null);
 const { openForm } = useNoteFormStore();
-
-function setCurrentCollection(collection: Collection) {
-  if (!collection) return;
-  currentCollection.value = collection;
-}
 
 function openCreateNoteForm() {
   const opts: NoteFormStoreOptions = {

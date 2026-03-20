@@ -114,6 +114,9 @@ const permanentDeleteOpts: ConfirmationDialogOptions = {
   confirmText: "Sí, borrar permanentemente",
   cancelText: "No, cancelar",
 };
+const currentCollection = defineModel<Collection | null>("currentCollection", {
+  default: null,
+});
 
 const collectionPages = ref<Record<number, CollectionFolder[]>>({});
 let currentCursor: string | null = null;
@@ -186,7 +189,7 @@ async function deleteCollection() {
     }
     removeCollectionNode();
     toggleExtraOptions();
-    emit("noCollectionSelected");
+    currentCollection.value = null;
   } catch (error) {
     console.error("Error al borrar la colección:", error);
     showToast("error", "Ocurrió un error al borrar la colección");
@@ -218,15 +221,9 @@ async function fetchCollections() {
   isLoading = false;
 }
 
-interface Emits {
-  (e: "openCollectionNotes", collection: Collection): void;
-  (e: "noCollectionSelected"): void;
-}
-const emit = defineEmits<Emits>();
-
 function openCollection(collection: CollectionFolder) {
   const { assignedPage, ...chosenCollection } = collection;
-  emit("openCollectionNotes", chosenCollection);
+  currentCollection.value = chosenCollection;
 }
 
 function openForm(mode: FormMode, collection?: CollectionFolder) {
