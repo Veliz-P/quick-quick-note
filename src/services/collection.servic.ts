@@ -2,89 +2,167 @@ import { CollectionRepository } from "../repositories/collection.repository";
 import { useActionEventStore } from "../stores/useActionEventStore";
 import type { Collection } from "../models/collection";
 import type { PaginatedResult } from "../types/paginated.result";
+import type { ResultPattern } from "../types/result.pattern";
+import { ok, error, handleErrorMsg } from "../utils/error.helpers";
 
 export class CollectionService {
-  static async createCollection(collectionName: string): Promise<Collection> {
-    if (
-      !collectionName ||
-      collectionName.trim().length <= 1 ||
-      collectionName.trim().length > 50
-    )
-      throw new Error(
-        "Invalid collection name, must be between 2 and 50 characters",
-      );
-    if (await CollectionRepository.exists(collectionName))
-      throw new Error("Collection already exists");
-    const result = await CollectionRepository.create(collectionName);
-    const { register: registerEvent } = useActionEventStore();
-    registerEvent("collection_created");
-    return result;
+  static async createCollection(
+    collectionName: string,
+  ): Promise<ResultPattern<Collection>> {
+    try {
+      if (
+        !collectionName ||
+        collectionName.trim().length <= 1 ||
+        collectionName.trim().length > 50
+      ) {
+        throw new Error("Nombre inválido, debe tener entre 2 y 50 caracteres");
+      }
+      if (await CollectionRepository.exists(collectionName)) {
+        throw new Error("Collection already exists");
+      }
+      const result = await CollectionRepository.create(collectionName);
+      const { register } = useActionEventStore();
+      register("collection_created");
+      return ok(result);
+    } catch (err) {
+      console.error(err);
+      const message = handleErrorMsg(err, "Error al crear la colección");
+      return error(message);
+    }
   }
 
   static async collectionExists(
     collectionName: string,
     excludeId?: number,
-  ): Promise<boolean> {
-    return await CollectionRepository.exists(collectionName, excludeId);
+  ): Promise<ResultPattern<boolean>> {
+    try {
+      const exists = await CollectionRepository.exists(
+        collectionName,
+        excludeId,
+      );
+      return ok(exists);
+    } catch (err) {
+      console.error(err);
+      const message = handleErrorMsg(err, "Error al verificar la colección");
+      return error(message);
+    }
   }
 
-  static async updateCollection(collection: Collection) {
-    if (
-      !collection ||
-      collection.name.trim().length <= 1 ||
-      collection.name.trim().length > 50
-    )
-      throw new Error("Invalid collection name");
-    if (!collection.id || collection.id <= 0)
-      throw new Error("Collection id is required");
-    if (await CollectionRepository.exists(collection.name, collection.id))
-      throw new Error("Collection already exists");
-    return await CollectionRepository.update(collection);
+  static async updateCollection(
+    collection: Collection,
+  ): Promise<ResultPattern<Collection>> {
+    try {
+      if (
+        !collection ||
+        collection.name.trim().length <= 1 ||
+        collection.name.trim().length > 50
+      ) {
+        throw new Error("Nombre inválido, debe tener entre 2 y 50 caracteres");
+      }
+      if (!collection.id || collection.id <= 0) {
+        throw new Error("ID inválido");
+      }
+      if (await CollectionRepository.exists(collection.name, collection.id)) {
+        throw new Error("La collección ya existe");
+      }
+      const updated = await CollectionRepository.update(collection);
+      return ok(updated);
+    } catch (err) {
+      console.error(err);
+      const message = handleErrorMsg(err, "Error al actualizar la colección");
+      return error(message);
+    }
   }
 
-  static async getCollection(id: number): Promise<Collection | null>;
-  static async getCollection(
-    collectionName: string,
-  ): Promise<Collection | null>;
   static async getCollection(
     idOrName: number | string,
-  ): Promise<Collection | null> {
-    if (idOrName && typeof idOrName === "number")
-      return await CollectionRepository.get(idOrName);
-    if (idOrName && typeof idOrName === "string")
-      return await CollectionRepository.get(idOrName);
-    return null;
+  ): Promise<ResultPattern<Collection | null>> {
+    try {
+      if (typeof idOrName === "number") {
+        if (idOrName <= 0) throw new Error("ID inválido");
+      }
+      if (typeof idOrName === "string") {
+        if (idOrName.trim().length === 0 || idOrName.trim().length > 50)
+          throw new Error(
+            "Nombre inválido, debe tener entre 2 y 50 caracteres",
+          );
+      }
+      let collection: Collection | null = null;
+      if (typeof idOrName === "number") {
+        collection = await CollectionRepository.get(idOrName);
+      } else if (typeof idOrName === "string") {
+        collection = await CollectionRepository.get(idOrName);
+      }
+      return ok(collection);
+    } catch (err) {
+      console.error(err);
+      const message = handleErrorMsg(err, "Error al obtener la colección");
+      return error(message);
+    }
   }
 
   static async getCollections(
     lastKey?: string | null,
     pageSize: number = 30,
     onlyDeleted: boolean = false,
-  ): Promise<PaginatedResult<Collection>> {
-    return await CollectionRepository.getAll(lastKey, pageSize, onlyDeleted);
+  ): Promise<ResultPattern<PaginatedResult<Collection>>> {
+    try {
+      const result = await CollectionRepository.getAll(
+        lastKey,
+        pageSize,
+        onlyDeleted,
+      );
+      return ok(result);
+    } catch (err) {
+      console.error(err);
+      const message = handleErrorMsg(err, "Error al obtener las colecciones");
+      return error(message);
+    }
   }
 
-  static async softDeleteCollection(id: number) {
-    if (!id || id <= 0) throw new Error("Invalid collection id");
-    await CollectionRepository.softDelete(id);
-    const { register: registerEvent } = useActionEventStore();
-    registerEvent("collection_soft_deleted");
+  static async softDeleteCollection(id: number): Promise<ResultPattern<void>> {
+    try {
+      if (!id || id <= 0) throw new Error("ID inválido");
+      await CollectionRepository.softDelete(id);
+      const { register } = useActionEventStore();
+      register("collection_soft_deleted");
+      return ok();
+    } catch (err) {
+      console.error(err);
+      const message = handleErrorMsg(err, "Error al eliminar la colección");
+      return error(message);
+    }
   }
 
-  static async deleteCollection(id: number) {
-    // Destructive action !!
-    if (!id || id <= 0) throw new Error("Invalid collection id");
-    const collectionDetail = await CollectionRepository.get(id);
-    if (!collectionDetail) throw new Error("Collection not found");
-    await CollectionRepository.permanentDelete(id);
-    const { register: registerEvent } = useActionEventStore();
-    registerEvent("collection_hard_deleted");
+  static async deleteCollection(id: number): Promise<ResultPattern<void>> {
+    try {
+      if (!id || id <= 0) throw new Error("ID inválido");
+      const collectionDetail = await CollectionRepository.get(id);
+      if (!collectionDetail) throw new Error("Collection not found");
+      await CollectionRepository.permanentDelete(id);
+      const { register } = useActionEventStore();
+      register("collection_hard_deleted");
+      return ok();
+    } catch (err) {
+      console.error(err);
+      const message = handleErrorMsg(err, "Error al eliminar permanentemente");
+      return error(message);
+    }
   }
 
-  static async restoreCollection(id: number): Promise<Collection> {
-    if (!id || id <= 0) throw new Error("Invalid collection id");
-    const collectionDetail = await CollectionRepository.get(id);
-    if (!collectionDetail) throw new Error("Collection not found");
-    return await CollectionRepository.restore(collectionDetail);
+  static async restoreCollection(
+    id: number,
+  ): Promise<ResultPattern<Collection>> {
+    try {
+      if (!id || id <= 0) throw new Error("ID inválido");
+      const collectionDetail = await CollectionRepository.get(id);
+      if (!collectionDetail) throw new Error("Collection not found");
+      const restored = await CollectionRepository.restore(collectionDetail);
+      return ok(restored);
+    } catch (err) {
+      console.error(err);
+      const message = handleErrorMsg(err, "Error al restaurar la colección");
+      return error(message);
+    }
   }
 }

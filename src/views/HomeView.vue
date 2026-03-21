@@ -41,6 +41,8 @@ import NoteBoard from "../components/NoteBoard.vue";
 import RecentActivity from "../components/RecentActivity.vue";
 import NewCollectionForm from "../components/CollectionForm.vue";
 import { useNoteFormStore } from "../stores/useNoteFormStore";
+import { useToastStore } from "../stores/useToastStore";
+const { showToast } = useToastStore();
 import type { defaultCollectionId } from "../db/idb";
 import type { FormMode } from "../types/form.mode";
 import type { NoteFormStoreOptions } from "../types/note.form.options";
@@ -63,7 +65,10 @@ function openNoteForm(
 }
 
 onMounted(async () => {
-  await NoteService.clearExpiredNotes();
+  const cleaningResult = await NoteService.clearExpiredNotes();
+  if (!cleaningResult.success) {
+    showToast("error", cleaningResult.error);
+  }
 });
 </script>
 <style scoped>

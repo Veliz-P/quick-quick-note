@@ -135,15 +135,16 @@ const props = withDefaults(defineProps<Props>(), {
 
 async function fetchNotes() {
   const cursor = (currentCursor as [number, string]) || undefined;
-  const result: PaginatedResult<Note> = await NoteService.getNotes(
-    props.collection,
-    pageSize,
-    cursor,
-  );
-  currentCursor = result.lastKey;
-  hasMore = result.hasMore;
+  const result = await NoteService.getNotes(props.collection, pageSize, cursor);
+  if (!result.success) {
+    showToast("error", result.error);
+    return;
+  }
+  const page = result.data as PaginatedResult<Note>;
+  currentCursor = page.lastKey;
+  hasMore = page.hasMore || false;
   const existingIds = new Set(notes.value.map((note) => note.id));
-  const newItems = result.data
+  const newItems = page.data
     .filter((note) => !existingIds.has(note.id))
     .map((note) => ({
       ...note,
@@ -181,7 +182,12 @@ async function refreshNotes() {
   hasMore = true;
   isLoading = false;
   realNotesLength.value = 0;
-  realNotesLength.value = await NoteService.getCount(props.collection);
+  const result = await NoteService.getCount(props.collection);
+  if (!result.success) {
+    showToast("error", result.error);
+    return;
+  }
+  realNotesLength.value = result.data ? result.data : 0;
   notesLength.value =
     realNotesLength.value < pageSize ? realNotesLength.value : pageSize;
   if (timeout) clearTimeout(timeout);
@@ -242,18 +248,15 @@ function openNoteForm(note: Note) {
 }
 
 async function duplicateNote(note: Note) {
-  try {
-    let { id, ...newNote } = note;
-    const result = await NoteService.createNote(newNote);
-    if (result.id) {
-      showToast("success", "Nota duplicada exitosamente");
-    }
-    toggleExtraOptions();
-    await refreshNotes();
-  } catch (error) {
-    console.error(error);
-    showToast("error", "Ocurrió un error al duplicar la nota");
+  let { id, ...newNote } = note;
+  const result = await NoteService.createNote(newNote);
+  if (!result.success) {
+    showToast("error", result.error);
+    return;
   }
+  showToast("success", "Nota duplicada exitosamente");
+  toggleExtraOptions();
+  await refreshNotes();
 }
 
 async function deleteNote() {
@@ -284,7 +287,10 @@ onMounted(async () => {
   if (interval) {
     clearInterval(interval);
   }
-  realNotesLength.value = await NoteService.getCount(props.collection);
+  const countResult = await NoteService.getCount(props.collection);
+  realNotesLength.value = countResult.success
+    ? (countResult.data as number)
+    : 0;
   notesLength.value =
     realNotesLength.value < pageSize ? realNotesLength.value : pageSize;
   interval = setInterval(() => {

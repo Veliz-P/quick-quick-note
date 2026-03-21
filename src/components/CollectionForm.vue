@@ -38,6 +38,7 @@ import { useToastStore } from "../stores/useToastStore";
 const { showToast } = useToastStore();
 import type { FormMode } from "../types/form.mode";
 import type { Collection } from "../models/collection";
+import type { ResultPattern } from "../types/result.pattern";
 
 const collection = reactive<Collection>({
   id: null,
@@ -52,11 +53,12 @@ watch(
   debounce(async (newVal: string) => {
     if (!newVal.trim()) return;
     const excludeId = collection?.id || undefined;
-    const exists = await CollectionService.collectionExists(
+    const existingResult = await CollectionService.collectionExists(
       newVal.trim(),
       excludeId,
     );
-    collectionExists.value = exists;
+    if (!existingResult.success) return;
+    collectionExists.value = existingResult.data as boolean;
   }),
 );
 
@@ -86,30 +88,36 @@ function closeForm() {
   emit("closeForm");
 }
 async function submitForm() {
-  try {
-    if (collectionExists.value) {
-      showToast("error", "Ya existe una colección con ese nombre");
-      return;
-    }
-    if (props.formMode == "create") {
-      const collectionCreated = await CollectionService.createCollection(
-        collection.name,
-      );
-      if (collectionCreated && collectionCreated.id) {
-        showToast("success", "Colección creada exitosamente");
-        emit("shouldReload");
-      }
-    } else if (props.formMode == "edit") {
-      await CollectionService.updateCollection(toRaw(collection) as Collection);
-      showToast("success", "Colección actualizada exitosamente");
-      emit("collectionResult", collection);
-    }
-
-    closeForm();
-  } catch (error) {
-    console.error("Error al crear la colección:", error);
-    showToast("error", "Error al crear la colección");
+  if (collectionExists.value) {
+    showToast("error", "Ya existe una colección con ese nombre");
+    return;
   }
+  let result: ResultPattern<Collection>;
+  let msg = "";
+  switch (props.formMode) {
+    case "create":
+      result = await CollectionService.createCollection(collection.name);
+      msg = "Colección creada exitosamente";
+      break;
+    case "edit":
+      result = await CollectionService.updateCollection(
+        toRaw(collection) as Collection,
+      );
+      msg = "Colección actualizada exitosamente";
+      break;
+  }
+  if (!result.success) {
+    showToast("error", result.error);
+    return;
+  }
+  showToast("success", msg);
+
+  if (props.formMode == "create") {
+    emit("shouldReload");
+  } else if (props.formMode == "edit") {
+    emit("collectionResult", collection);
+  }
+  closeForm();
 }
 
 function prefillForm() {

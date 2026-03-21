@@ -106,6 +106,7 @@ import {
 } from "lucide-vue-next";
 import type { FormMode } from "../types/form.mode";
 import type { Note } from "../models/note";
+import type { ResultPattern } from "../types/result.pattern";
 
 const note: Note = reactive({
   id: null,
@@ -181,7 +182,7 @@ function generateExpirationDate(): string {
 }
 
 async function submitForm() {
-  let result: Note | null = null;
+  let result: ResultPattern<Note> | null = null;
   if (options.value.isTemporary) {
     note.expiresAt = generateExpirationDate();
     if (invalidDate.value) {
@@ -189,33 +190,30 @@ async function submitForm() {
       return;
     }
   }
-  try {
-    switch (formMode.value) {
-      case "create":
-        const { id, ...newNote } = note;
-        result = await NoteService.createNote(newNote);
-        break;
-      case "edit":
-        const updateNote = { ...note };
-        result = await NoteService.updateNote(updateNote);
-        break;
-    }
-    if (result.id) {
-      const message =
-        formMode.value === "create"
-          ? "Nota creada exitosamente"
-          : "Nota actualizada exitosamente";
-      formMode.value = "edit";
-      note.id = result.id;
-      note.createdAt = result.createdAt;
-      showToast("success", message);
-      closeForm(true);
-    }
-  } catch (error) {
-    console.error(error);
-    showToast("error", "Ocurrió un error al guardar la nota");
+  switch (formMode.value) {
+    case "create":
+      const { id, ...newNote } = note;
+      result = await NoteService.createNote(newNote);
+      break;
+    case "edit":
+      const updateNote = { ...note };
+      result = await NoteService.updateNote(updateNote);
+      break;
   }
-  // emit("shouldReload");
+  if (!result.success) {
+    showToast("error", result.error);
+    return;
+  }
+  const resultNote = result.data as Note;
+  const message =
+    formMode.value === "create"
+      ? "Nota creada exitosamente"
+      : "Nota actualizada exitosamente";
+  formMode.value = "edit";
+  note.id = resultNote.id;
+  note.createdAt = resultNote.createdAt;
+  showToast("success", message);
+  closeForm(true);
 }
 
 function preFillForm() {

@@ -97,6 +97,7 @@ const { confirm } = useConfirmationDialogStore();
 import type { ConfirmationDialogOptions } from "../types/confirmation.options";
 import { useToastStore } from "../stores/useToastStore";
 import type { FormMode } from "../types/form.mode";
+import type { ResultPattern } from "../types/result.pattern";
 const { showToast } = useToastStore();
 
 let formMode: FormMode = "create";
@@ -151,37 +152,47 @@ function toggleExtraOptions(collection?: Collection) {
 }
 
 async function deleteCollection() {
-  try {
-    const deleteCollectionId = activeId.value;
-    if (!deleteCollectionId)
-      throw new Error("No collection selected for deletion");
-    if (!deletePermanently.value) {
-      await CollectionService.softDeleteCollection(deleteCollectionId);
-      showToast("success", "Colección movida a papelera");
-    } else {
-      const ok = await confirm(permanentDeleteOpts);
-      if (!ok) return;
-      await CollectionService.deleteCollection(deleteCollectionId);
-      showToast("success", "Colección borrada permanentemente");
-    }
-    removeCollectionNode();
-    toggleExtraOptions();
-    currentCollection.value = null;
-  } catch (error) {
-    console.error("Error al borrar la colección:", error);
-    showToast("error", "Ocurrió un error al borrar la colección");
+  const deleteCollectionId = activeId.value;
+  if (!deleteCollectionId) {
+    console.error("No collection selected for deletion");
+    return;
   }
+  let deletionResult: ResultPattern<void>;
+  let msg = "";
+  if (!deletePermanently.value) {
+    deletionResult =
+      await CollectionService.softDeleteCollection(deleteCollectionId);
+    msg = "Colección movida a papelera";
+  } else {
+    const ok = await confirm(permanentDeleteOpts);
+    if (!ok) return;
+    deletionResult =
+      await CollectionService.deleteCollection(deleteCollectionId);
+    msg = "Colección borrada permanentemente";
+  }
+  if (!deletionResult.success) {
+    showToast("error", "Ocurrió un error al borrar la colección");
+    return;
+  }
+  showToast("success", msg);
+  removeCollectionNode();
+  toggleExtraOptions();
 }
 
 async function fetchCollections() {
   if (isLoading.value) return;
   isLoading.value = true;
   const prevCursor = currentCursor || null;
-  const result: PaginatedResult<Collection> =
-    await CollectionService.getCollections(prevCursor);
-  currentCursor = result.lastKey as string;
-  hasMore.value = result.hasMore;
-  collections.value.push(...result.data);
+  const fetchResult = await CollectionService.getCollections(prevCursor);
+  if (!fetchResult.success) {
+    showToast("error", "Ocurrió un error al obtener las colecciones");
+    isLoading.value = false;
+    return;
+  }
+  const page = fetchResult.data as PaginatedResult<Collection>;
+  currentCursor = page.lastKey as string;
+  hasMore.value = page.hasMore;
+  collections.value.push(...page.data);
   isLoading.value = false;
 }
 
