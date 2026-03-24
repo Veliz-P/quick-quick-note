@@ -30,7 +30,7 @@
           <div class="folder-icon">
             <FolderInput :size="18" />
           </div>
-          {{ collection.name }}
+          <div v-html="buildEmphasizedHtml(collection.name, searchText)"></div>
           <button class="pick-option-btn btn-primary">
             <ArrowUpRight :size="18" />
           </button>
@@ -55,6 +55,13 @@
         </button>
       </div>
     </div>
+    <button
+      @click="emit('cancelSearch')"
+      id="cancel-search-btn"
+      class="btn-primary"
+    >
+      Cerrar
+    </button>
   </div>
 </template>
 <script setup lang="ts">
@@ -71,6 +78,7 @@ const toastStore = useToastStore();
 
 interface Emits {
   (e: "selectedCollection", collection: Collection): void;
+  (e: "cancelSearch"): void;
 }
 const emit = defineEmits<Emits>();
 
@@ -115,6 +123,17 @@ watch(
     console.log(resultList.value);
   }, 500),
 );
+
+function buildEmphasizedHtml(originalText: string, emphasizeText: string) {
+  const strongStyle = `
+  font-weight: bold;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 2px;
+  `;
+  const strongHtml = `<strong style="${strongStyle}">${emphasizeText}</strong>`;
+  return `<p>${originalText.replace(emphasizeText, strongHtml)}</p>`;
+}
 </script>
 
 <style scoped>
@@ -248,6 +267,11 @@ watch(
 
 .hidden {
   display: none !important;
+}
+
+#cancel-search-btn {
+  padding: var(--space-2);
+  margin-right: auto;
 }
 
 @media (min-width: 768px) {

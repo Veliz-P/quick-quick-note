@@ -82,7 +82,10 @@
   </div>
 
   <div class="popup-layout" v-if="isCollectionSearcherVisible">
-    <CollectionSearcher @selected-collection="moveNoteTo" />
+    <CollectionSearcher
+      @selected-collection="moveNoteTo"
+      @cancel-search="cancelSearch"
+    />
   </div>
 </template>
 
@@ -289,6 +292,11 @@ async function deleteNote() {
 
 function openCollectionSelector() {
   isCollectionSearcherVisible.value = true;
+}
+
+function cancelSearch() {
+  isCollectionSearcherVisible.value = false;
+  activeId.value = null;
 }
 
 async function moveNoteTo(collection: Collection) {
