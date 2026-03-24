@@ -105,12 +105,14 @@ export class CollectionService {
     lastKey?: string | null,
     pageSize: number = 30,
     onlyDeleted: boolean = false,
+    search: string = "",
   ): Promise<ResultPattern<PaginatedResult<Collection>>> {
     try {
       const result = await CollectionRepository.getAll(
         lastKey,
         pageSize,
         onlyDeleted,
+        search,
       );
       return ok(result);
     } catch (err) {

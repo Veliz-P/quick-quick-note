@@ -178,4 +178,26 @@ export class NoteService {
       return error(message);
     }
   }
+
+  static async moveNoteToCollection(noteId: number, collectionId: number) {
+    try {
+      if (!noteId || noteId <= 0) throw new Error("ID de notainválido");
+      if (!collectionId || collectionId <= 0)
+        throw new Error("ID de colección inválido");
+      const note = await NoteRepository.get(noteId);
+      if (!note) throw new Error("Nota no encontrada");
+      const collection = await CollectionRepository.get(collectionId);
+      if (!collection) throw new Error("Colección no encontrada");
+      note.collectionId = collectionId;
+      await NoteRepository.update(note);
+      return ok();
+    } catch (err) {
+      console.error(err);
+      const message = handleErrorMsg(
+        err,
+        "Error al mover la nota a la colección",
+      );
+      return error(message);
+    }
+  }
 }

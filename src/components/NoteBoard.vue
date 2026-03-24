@@ -53,7 +53,7 @@
                 <li @click="duplicateNote(item as Note)">
                   <button><Copy :size="20" /> Duplicar</button>
                 </li>
-                <li>
+                <li @click="openCollectionSelector()">
                   <button><MoveUpRight :size="20" /> Mover a</button>
                 </li>
                 <li @click="deleteNote()" class="delete-item">
@@ -80,6 +80,10 @@
     <h3><strong>Colección vacía</strong></h3>
     <p>Agrega nuevas notas para comenzar.</p>
   </div>
+
+  <div class="popup-layout" v-if="isCollectionSearcherVisible">
+    <CollectionSearcher @selected-collection="moveNoteTo" />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -99,11 +103,13 @@ import { useToastStore } from "../stores/useToastStore";
 import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
 import { useNoteFormStore } from "../stores/useNoteFormStore";
 import Grid from "vue-virtual-scroll-grid";
+import CollectionSearcher from "./CollectionSearcher.vue";
 import type { PaginatedResult } from "../types/paginated.result";
 import type { Note } from "../models/note";
 import type { ConfirmationDialogOptions } from "../types/confirmation.options";
 import type { defaultCollectionId } from "../db/idb";
 import type { NoteFormStoreOptions } from "../types/note.form.options";
+import type { Collection } from "../models/collection";
 
 const { showToast } = useToastStore();
 const { confirm } = useConfirmationDialogStore();
@@ -125,6 +131,7 @@ let isLoading = false;
 const notesLength = ref(0);
 const realNotesLength = ref(0); // It will determine if grid or empty state should be rendered
 const shouldRenderGrid = ref(true);
+const isCollectionSearcherVisible = ref(false);
 
 interface Props {
   collection?: number | defaultCollectionId;
@@ -278,6 +285,25 @@ async function deleteNote() {
     console.error(error);
     showToast("error", "Ocurrió un error al borrar la nota");
   }
+}
+
+function openCollectionSelector() {
+  isCollectionSearcherVisible.value = true;
+}
+
+async function moveNoteTo(collection: Collection) {
+  isCollectionSearcherVisible.value = false;
+  if (!activeId.value || !collection || !collection.id) return;
+  const result = await NoteService.moveNoteToCollection(
+    activeId.value,
+    collection.id,
+  );
+  if (!result.success) {
+    showToast("error", result.error);
+    return;
+  }
+  showToast("success", "Nota movida exitosamente");
+  await refreshNotes();
 }
 
 const now = ref(new Date());

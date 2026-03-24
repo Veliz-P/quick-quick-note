@@ -57,10 +57,19 @@ export class CollectionRepository {
     return collection;
   }
 
+  private static matchesSearch(
+    collection: Collection,
+    search: string,
+  ): boolean {
+    const collectionName = collection.name.toLowerCase();
+    return collectionName.includes(search.toLowerCase());
+  }
+
   static async getAll(
     lastKey?: string | null,
     pageSize: number = 30,
     onlyDeleted: boolean = false,
+    search: string = "",
   ): Promise<PaginatedResult<Collection>> {
     const db = await dbPromise;
     const tx = db.transaction(stores.COLLECTIONS, "readonly");
@@ -74,7 +83,12 @@ export class CollectionRepository {
     let collections: Collection[] = [];
     let cursor = await index.openCursor(range, "prev");
     while (cursor && collections.length < pageSize + 1) {
-      if (cursor.value.isDeleted === onlyDeleted) {
+      let matchesSearch = true;
+      if (search && search.length > 0) {
+        matchesSearch = this.matchesSearch(cursor.value, search);
+      }
+      const matchesIsDeletedField = cursor.value.isDeleted === onlyDeleted;
+      if (matchesIsDeletedField && matchesSearch) {
         collections.push(cursor.value);
       }
       cursor = await cursor.continue();
