@@ -36,6 +36,9 @@ export const useActionEventStore = defineStore(
         case "collection_hard_deleted":
           textContent = "Colección borrada permanentemente";
           break;
+        case "note_moved":
+          textContent = "Nota movida a otra colección";
+          break;
       }
       const actionEvent: ActionEvent = {
         type,

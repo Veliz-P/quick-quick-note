@@ -131,8 +131,10 @@ function buildEmphasizedHtml(originalText: string, emphasizeText: string) {
   text-underline-offset: 2px;
   text-decoration-thickness: 2px;
   `;
+  originalText = originalText.toLowerCase();
+  emphasizeText = emphasizeText.toLowerCase();
   const strongHtml = `<strong style="${strongStyle}">${emphasizeText}</strong>`;
-  return `<p>${originalText.replace(emphasizeText, strongHtml)}</p>`;
+  return `<p style='text-transform: capitalize'>${originalText.replace(emphasizeText, strongHtml)}</p>`;
 }
 </script>
 
@@ -270,8 +272,9 @@ function buildEmphasizedHtml(originalText: string, emphasizeText: string) {
 }
 
 #cancel-search-btn {
-  padding: var(--space-2);
+  padding: var(--space-2) var(--space-4);
   margin-right: auto;
+  box-shadow: var(--shadow-md);
 }
 
 @media (min-width: 768px) {

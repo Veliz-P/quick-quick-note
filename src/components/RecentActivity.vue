@@ -79,6 +79,7 @@ const activityIcons: Record<ActionEventType, FunctionalComponent> = {
   collection_created: Plus,
   collection_hard_deleted: Trash,
   collection_soft_deleted: FolderInput,
+  note_moved: FolderInput,
 };
 const getIcon = (eventType: ActionEventType) => activityIcons[eventType];
 
@@ -89,6 +90,7 @@ const activityClasses: Record<ActionEventType, string> = {
   collection_created: "created",
   collection_hard_deleted: "hard-deleted",
   collection_soft_deleted: "soft-deleted",
+  note_moved: "note-moved-to",
 };
 const getIconClass = (eventType: ActionEventType) => activityClasses[eventType];
 
@@ -241,6 +243,11 @@ h2 {
 .soft-deleted {
   color: var(--secondary-600);
   background-color: var(--secondary-200);
+}
+
+.note-moved-to {
+  color: var(--light);
+  background-color: var(--info);
 }
 
 .dark .soft-deleted {

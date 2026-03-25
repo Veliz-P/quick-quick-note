@@ -4,7 +4,8 @@ export type ActionEventType =
   | "note_hard_deleted"
   | "collection_created"
   | "collection_soft_deleted"
-  | "collection_hard_deleted";
+  | "collection_hard_deleted"
+  | "note_moved";
 
 export interface ActionEvent {
   type: ActionEventType;

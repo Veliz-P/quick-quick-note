@@ -181,7 +181,7 @@ export class NoteService {
 
   static async moveNoteToCollection(noteId: number, collectionId: number) {
     try {
-      if (!noteId || noteId <= 0) throw new Error("ID de notainválido");
+      if (!noteId || noteId <= 0) throw new Error("ID de nota inválido");
       if (!collectionId || collectionId <= 0)
         throw new Error("ID de colección inválido");
       const note = await NoteRepository.get(noteId);
@@ -190,6 +190,8 @@ export class NoteService {
       if (!collection) throw new Error("Colección no encontrada");
       note.collectionId = collectionId;
       await NoteRepository.update(note);
+      const { register } = useActionEventStore();
+      register("note_moved");
       return ok();
     } catch (err) {
       console.error(err);
