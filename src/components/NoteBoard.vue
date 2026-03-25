@@ -113,6 +113,7 @@ import type { ConfirmationDialogOptions } from "../types/confirmation.options";
 import type { defaultCollectionId } from "../db/idb";
 import type { NoteFormStoreOptions } from "../types/note.form.options";
 import type { Collection } from "../models/collection";
+import type { GetAllOptsNotes } from "../repositories/note.repository";
 
 const { showToast } = useToastStore();
 const { confirm } = useConfirmationDialogStore();
@@ -145,7 +146,12 @@ const props = withDefaults(defineProps<Props>(), {
 
 async function fetchNotes() {
   const cursor = (currentCursor as [number, string]) || undefined;
-  const result = await NoteService.getNotes(props.collection, pageSize, cursor);
+  const fetchOpts: GetAllOptsNotes = {
+    collection: props.collection,
+    pageSize,
+    lastKey: cursor,
+  };
+  const result = await NoteService.getNotes(fetchOpts);
   if (!result.success) {
     showToast("error", result.error);
     return;

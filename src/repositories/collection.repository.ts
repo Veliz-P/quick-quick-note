@@ -2,6 +2,7 @@ import { dbPromise } from "../db/idb";
 import { stores } from "../db/idb";
 import type { PaginatedResult } from "../types/paginated.result";
 import type { Collection } from "../models/collection";
+import type { GetAllOpts } from "../types/get.all.opts";
 
 export class CollectionRepository {
   static async create(collectionName: string): Promise<Collection> {
@@ -66,11 +67,20 @@ export class CollectionRepository {
   }
 
   static async getAll(
-    lastKey?: string | null,
-    pageSize: number = 30,
-    onlyDeleted: boolean = false,
-    search: string = "",
+    // lastKey?: string | null,
+    // pageSize: number = 30,
+    // onlyDeleted: boolean = false,
+    // search: string = "",
+    opts: GetAllOpts,
   ): Promise<PaginatedResult<Collection>> {
+    if (!opts) throw new Error("Opciones inválidas");
+    let { pageSize, lastKey, onlyDeleted, search, exclude } = opts;
+    pageSize = pageSize ?? 30;
+    lastKey = (lastKey as string) ?? null;
+    onlyDeleted = onlyDeleted ?? false;
+    search = search ?? "";
+    exclude = exclude ?? []; // TODO: Implement exclude id logic
+
     const db = await dbPromise;
     const tx = db.transaction(stores.COLLECTIONS, "readonly");
     const store = tx.objectStore(stores.COLLECTIONS);

@@ -71,6 +71,7 @@ import { debounce } from "../utils/debounce";
 import { CollectionService } from "../services/collection.servic";
 import { useToastStore } from "../stores/useToastStore";
 import type { Collection } from "../models/collection";
+import type { GetAllOpts } from "../types/get.all.opts";
 const searchText = ref("");
 const resultList = ref<Collection[]>([]);
 const idleState = ref(true);
@@ -87,15 +88,12 @@ const selectCollection = (collection: Collection) => {
 };
 
 async function fetchData(search: string = "") {
-  const limit = 100;
-  const onlyDeleted = false;
-  const lastKey = null; // TODO: USE LAST KEY WHEN TRYING TO LOAD MORE THROUGH INFINITE SCROLL
-  return await CollectionService.getCollections(
-    lastKey,
-    limit,
-    onlyDeleted,
+  // const lastKey = null; ->  TODO: USE LAST KEY WHEN TRYING TO LOAD MORE THROUGH INFINITE SCROLL
+  const fetchOpts: GetAllOpts = {
+    pageSize: 50,
     search,
-  );
+  };
+  return await CollectionService.getCollections(fetchOpts);
 }
 
 watch(

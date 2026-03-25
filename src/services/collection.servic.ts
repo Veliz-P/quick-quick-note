@@ -3,6 +3,7 @@ import { useActionEventStore } from "../stores/useActionEventStore";
 import type { Collection } from "../models/collection";
 import type { PaginatedResult } from "../types/paginated.result";
 import type { ResultPattern } from "../types/result.pattern";
+import type { GetAllOpts } from "../types/get.all.opts";
 import { ok, error, handleErrorMsg } from "../utils/error.helpers";
 
 export class CollectionService {
@@ -102,18 +103,14 @@ export class CollectionService {
   }
 
   static async getCollections(
-    lastKey?: string | null,
-    pageSize: number = 30,
-    onlyDeleted: boolean = false,
-    search: string = "",
+    // lastKey?: string | null,
+    // pageSize: number = 30,
+    // onlyDeleted: boolean = false,
+    // search: string = "",
+    opts: GetAllOpts,
   ): Promise<ResultPattern<PaginatedResult<Collection>>> {
     try {
-      const result = await CollectionRepository.getAll(
-        lastKey,
-        pageSize,
-        onlyDeleted,
-        search,
-      );
+      const result = await CollectionRepository.getAll(opts);
       return ok(result);
     } catch (err) {
       console.error(err);

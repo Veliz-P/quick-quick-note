@@ -4,6 +4,7 @@ import { useActionEventStore } from "../stores/useActionEventStore";
 import type { PaginatedResult } from "../types/paginated.result";
 import type { Note } from "../models/note";
 import type { ResultPattern } from "../types/result.pattern";
+import type { GetAllOptsNotes } from "../repositories/note.repository";
 import { ok, error, handleErrorMsg } from "../utils/error.helpers";
 
 export class NoteService {
@@ -70,24 +71,19 @@ export class NoteService {
   }
 
   static async getNotes(
-    collection: number = 1,
-    pageSize: number = 30,
-    lastKey: [number, string] | null = null,
-    onlyDeleted: boolean = false,
+    opts: GetAllOptsNotes,
   ): Promise<ResultPattern<PaginatedResult<Note>>> {
     try {
+      if (!opts) throw new Error("Opciones inválidas");
+      let { collection } = opts;
+      collection = collection ?? 1; // 1 is default collection
       if (collection && collection <= 0)
         throw new Error("ID de colección inválido");
       if (collection) {
         const foundCollection = await CollectionRepository.get(collection);
         if (!foundCollection) throw new Error("La colección no existe");
       }
-      const result = await NoteRepository.getAll(
-        collection,
-        pageSize,
-        lastKey,
-        onlyDeleted,
-      );
+      const result = await NoteRepository.getAll(opts);
       return ok(result);
     } catch (err) {
       console.error(err);

@@ -1,7 +1,12 @@
 import type { Note } from "../models/note";
 import { dbPromise } from "../db/idb";
-import type { PaginatedResult } from "../types/paginated.result";
 import { stores } from "../db/idb";
+import type { PaginatedResult } from "../types/paginated.result";
+import type { GetAllOpts } from "../types/get.all.opts";
+
+export interface GetAllOptsNotes extends GetAllOpts {
+  collection: number | undefined;
+}
 
 export class NoteRepository {
   static async create(note: Omit<Note, "id">): Promise<Note> {
@@ -29,12 +34,15 @@ export class NoteRepository {
     return note;
   }
 
-  static async getAll(
-    collection: number = 1, // 1 is default collection
-    pageSize: number = 30,
-    lastKey: [number, string] | null = null,
-    onlyDeleted: boolean = false,
-  ): Promise<PaginatedResult<Note>> {
+  static async getAll(opts: GetAllOptsNotes): Promise<PaginatedResult<Note>> {
+    if (!opts) throw new Error("Opciones inválidas");
+    let { collection, pageSize, lastKey, onlyDeleted, exclude } = opts;
+    collection = collection ?? 1; // 1 is default collection
+    pageSize = pageSize ?? 30;
+    lastKey = (lastKey as [number, string]) ?? null;
+    onlyDeleted = onlyDeleted ?? false;
+    exclude = exclude ?? []; // TODO: Implement exclude id logic
+
     const db = await dbPromise;
     const tx = db.transaction(stores.NOTES, "readonly");
     const store = tx.objectStore(stores.NOTES);
@@ -43,7 +51,7 @@ export class NoteRepository {
     let cursor = null;
 
     if (lastKey) {
-      const [lastCollection, lastDate] = lastKey;
+      const [lastCollection, lastDate] = lastKey as [number, string];
       const range = IDBKeyRange.bound(
         [collection, ""],
         [lastCollection, lastDate],

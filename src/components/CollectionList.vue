@@ -98,6 +98,7 @@ import type { ConfirmationDialogOptions } from "../types/confirmation.options";
 import { useToastStore } from "../stores/useToastStore";
 import type { FormMode } from "../types/form.mode";
 import type { ResultPattern } from "../types/result.pattern";
+import type { GetAllOpts } from "../types/get.all.opts";
 const { showToast } = useToastStore();
 
 let formMode: FormMode = "create";
@@ -183,7 +184,10 @@ async function fetchCollections() {
   if (isLoading.value) return;
   isLoading.value = true;
   const prevCursor = currentCursor || null;
-  const fetchResult = await CollectionService.getCollections(prevCursor);
+  const fetchOpts: GetAllOpts = {
+    lastKey: prevCursor,
+  };
+  const fetchResult = await CollectionService.getCollections(fetchOpts);
   if (!fetchResult.success) {
     showToast("error", "Ocurrió un error al obtener las colecciones");
     isLoading.value = false;
