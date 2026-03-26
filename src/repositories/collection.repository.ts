@@ -2,7 +2,8 @@ import { dbPromise } from "../db/idb";
 import { stores } from "../db/idb";
 import type { PaginatedResult } from "../types/paginated.result";
 import type { Collection } from "../models/collection";
-import type { GetAllOpts } from "../types/get.all.opts";
+import type { GetAllOpts, FetchLevel } from "../types/get.all.opts";
+import type { Note } from "../models/note";
 
 export class CollectionRepository {
   static async create(collectionName: string): Promise<Collection> {
@@ -52,9 +53,9 @@ export class CollectionRepository {
       collection = await db.get(stores.COLLECTIONS, idOrName);
     }
 
-    if (collection?.isDeleted) {
-      return null;
-    }
+    // if (collection?.isDeleted) {
+    //   return null;
+    // }
     return collection;
   }
 
@@ -66,19 +67,24 @@ export class CollectionRepository {
     return collectionName.includes(search.toLowerCase());
   }
 
-  static async getAll(
-    // lastKey?: string | null,
-    // pageSize: number = 30,
-    // onlyDeleted: boolean = false,
-    // search: string = "",
-    opts: GetAllOpts,
-  ): Promise<PaginatedResult<Collection>> {
+  private static matchesFetchLevel(
+    collection: Collection,
+    fetchLevel: FetchLevel,
+  ) {
+    if (fetchLevel === "all") return true;
+    if (fetchLevel === "active" && !collection.isDeleted) return true;
+    if (fetchLevel === "inactive" && collection.isDeleted) return true;
+    return false;
+  }
+
+  static async getAll(opts: GetAllOpts): Promise<PaginatedResult<Collection>> {
     if (!opts) throw new Error("Opciones inválidas");
-    let { pageSize, lastKey, onlyDeleted, search, exclude } = opts;
+    let { pageSize, lastKey, search, exclude, fetchLevel } = opts;
     pageSize = pageSize ?? 30;
     lastKey = (lastKey as string) ?? null;
-    onlyDeleted = onlyDeleted ?? false;
+    // onlyDeleted = onlyDeleted ?? false;
     search = search ?? "";
+    fetchLevel = fetchLevel ?? "active";
     exclude = exclude ?? []; // TODO: Implement exclude id logic
 
     const db = await dbPromise;
@@ -97,8 +103,11 @@ export class CollectionRepository {
       if (search && search.length > 0) {
         matchesSearch = this.matchesSearch(cursor.value, search);
       }
-      const matchesIsDeletedField = cursor.value.isDeleted === onlyDeleted;
-      if (matchesIsDeletedField && matchesSearch) {
+      const matchesFetchLevel = this.matchesFetchLevel(
+        cursor.value,
+        fetchLevel,
+      );
+      if (matchesFetchLevel && matchesSearch) {
         collections.push(cursor.value);
       }
       cursor = await cursor.continue();
@@ -121,6 +130,23 @@ export class CollectionRepository {
     collectionDetail.name = `${collectionDetail.name}:deleted:${timestamp}`;
     collectionDetail.isDeleted = true;
     await this.update(collectionDetail);
+    const db = await dbPromise;
+    const tx = db.transaction(stores.NOTES, "readwrite");
+    const store = tx.objectStore(stores.NOTES);
+    const index = store.index("byCollectionId");
+    const collectionId = Number(id);
+    let cursor = await index.openCursor(
+      IDBKeyRange.bound(
+        [collectionId, 0], // collectionId, id
+        [collectionId, Infinity],
+      ),
+    );
+    while (cursor) {
+      const note = cursor.value as Note;
+      await store.put({ ...note, isDeleted: true });
+      cursor = await cursor.continue();
+    }
+    await tx.done;
   }
 
   static async permanentDelete(id: number) {
@@ -146,6 +172,7 @@ export class CollectionRepository {
 
   static async restore(collection: Collection): Promise<Collection> {
     collection.isDeleted = false;
+    collection.name = collection.name.split(":")[0] || collection.name;
     const restoredCollection = await this.update(collection);
     return restoredCollection;
   }

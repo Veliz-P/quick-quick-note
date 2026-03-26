@@ -1,6 +1,6 @@
 <template>
   <div id="collection-folders">
-    <div id="new-folder-action" class="collection-folder">
+    <div id="new-folder-action" v-if="!props.trash" class="collection-folder">
       <button class="tertiary-btn" @click="openForm('create')">
         <div class="folder-icon"><FolderPlus /></div>
         Nuevo
@@ -11,30 +11,29 @@
       class="collection-folder"
       v-for="collection in collections"
       :key="collection.id!"
+      :class="{ 'collection-deleted': collection.isDeleted }"
       @click="openCollection(collection)"
-      :class="collection.id! === 2 ? 'hidden' : ''"
     >
       <div class="folder-icon">
         <Folder />
       </div>
       <div>
         <h4>
-          {{
-            collection.name.length > 17
-              ? collection.name.slice(0, 17) + "..."
-              : collection.name
-          }}
+          {{ formatCollectionName(collection.name) }}
         </h4>
         <p>{{ formatDate(collection.createdAt) }}</p>
       </div>
-      <div class="collection-name-popup" v-if="collection.name.length > 17">
-        <p>{{ collection.name }}</p>
+      <div
+        class="collection-name-popup"
+        v-if="formatCollectionName(collection.name, true).length > 17"
+      >
+        <p>{{ formatCollectionName(collection.name, true) }}</p>
       </div>
       <!-- !! hide extra options for default collection because it can't be edited  -->
       <button
         class="btn-secondary collection-actions-btn"
         @click.stop="toggleExtraOptions(collection)"
-        v-if="collection.id! !== 1"
+        v-if="collection.id! !== 1 && collection.id! !== 2"
       >
         <Ellipsis :size="20" />
       </button>
@@ -44,13 +43,24 @@
         class="extra-options"
       >
         <ul>
-          <li @click.stop="openForm('edit', collection)" class="delete-item">
+          <li
+            v-if="collection.isDeleted"
+            @click.stop="restoreDeletedCollection(collection)"
+            class="delete-item"
+          >
+            <button><ArchiveRestore :size="20" /> Restaurar</button>
+          </li>
+          <li
+            v-if="!collection.isDeleted"
+            @click.stop="openForm('edit', collection)"
+            class="delete-item"
+          >
             <button><FolderPen :size="20" /> Renombrar</button>
           </li>
           <li @click.stop="deleteCollection" class="delete-item">
             <button><Trash2 :size="20" /> Borrar</button>
           </li>
-          <li>
+          <li v-if="!trash">
             <input v-model="deletePermanently" type="checkbox" />
             <label>¿Borrar sin papelera?</label>
           </li>
@@ -78,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import type { Collection } from "../models/collection";
 import type { PaginatedResult } from "../types/paginated.result";
 import NewCollectionForm from "./CollectionForm.vue";
@@ -91,6 +101,7 @@ import {
   Trash2,
   FolderPen,
   Loader,
+  ArchiveRestore,
 } from "lucide-vue-next";
 import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
 const { confirm } = useConfirmationDialogStore();
@@ -100,6 +111,13 @@ import type { FormMode } from "../types/form.mode";
 import type { ResultPattern } from "../types/result.pattern";
 import type { GetAllOpts } from "../types/get.all.opts";
 const { showToast } = useToastStore();
+
+interface Props {
+  trash?: boolean;
+}
+const props = withDefaults(defineProps<Props>(), {
+  trash: false,
+});
 
 let formMode: FormMode = "create";
 const collectionUpdate = ref<Collection | null>(null);
@@ -130,14 +148,29 @@ function removeCollectionNode() {
 }
 
 function updateCollectionNode(collection: Collection) {
-  if (formMode !== "edit" || !collection) return;
+  // if (formMode !== "edit" || !collection) return;
+  if (!collection) return;
   const targetCollection = collections.value.find(
     (c) => c.id === collection.id,
   );
   if (!targetCollection) return;
   const index = collections.value.indexOf(targetCollection);
   targetCollection.name = collection.name;
+  targetCollection.isDeleted = collection.isDeleted;
   collections.value[index] = targetCollection;
+}
+
+async function restoreDeletedCollection(collection: Collection) {
+  const restoreResult = await CollectionService.restoreCollection(
+    collection.id!,
+  );
+  if (!restoreResult.success) {
+    showToast("error", restoreResult.error);
+    return;
+  }
+  showToast("success", "Colección restaurada");
+  collection.isDeleted = false;
+  updateCollectionNode(collection);
 }
 
 function toggleExtraOptions(collection?: Collection) {
@@ -178,6 +211,7 @@ async function deleteCollection() {
   showToast("success", msg);
   removeCollectionNode();
   toggleExtraOptions();
+  currentCollection.value = null;
 }
 
 async function fetchCollections() {
@@ -186,6 +220,8 @@ async function fetchCollections() {
   const prevCursor = currentCursor || null;
   const fetchOpts: GetAllOpts = {
     lastKey: prevCursor,
+    // onlyDeleted: props.trash,
+    fetchLevel: props.trash ? "all" : "active",
   };
   const fetchResult = await CollectionService.getCollections(fetchOpts);
   if (!fetchResult.success) {
@@ -253,9 +289,31 @@ async function resetCollectionList() {
   setInfinteScroll();
 }
 
+function formatCollectionName(
+  collectionName: string,
+  skipLenghtCheck: boolean = false,
+) {
+  if (props.trash) {
+    collectionName = collectionName.split(":")[0] || collectionName;
+  }
+  if (collectionName.length > 17 && !skipLenghtCheck) {
+    collectionName = collectionName.slice(0, 17) + "...";
+  }
+  return collectionName;
+}
+
+watch(
+  () => props.trash,
+  async (newVal) => {
+    deletePermanently.value = newVal;
+    await resetCollectionList();
+  },
+);
+
 onMounted(async () => {
   await fetchCollections();
   setInfinteScroll();
+  deletePermanently.value = props.trash;
 });
 </script>
 
@@ -305,6 +363,10 @@ onMounted(async () => {
 
 .folder-icon {
   color: var(--secondary-300);
+}
+
+.collection-deleted .folder-icon {
+  color: var(--error);
 }
 
 .collection-name-popup {

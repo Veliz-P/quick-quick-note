@@ -19,13 +19,13 @@
           notas
         </li>
       </router-link>
-      <!-- <router-link to="/">
+      <router-link :to="{ path: '/collections', query: { trash: 'true' } }">
         <li class="link-item">
           <Trash2 />
           Papelera
         </li>
       </router-link>
-      <router-link to="/">
+      <!-- <router-link to="/">
         <li class="link-item">
           <Info />
           App Info
@@ -72,13 +72,16 @@
           Colecciones y notas
         </li>
       </router-link>
-      <!-- <router-link to="/" @click="closeMenu">
+      <router-link
+        :to="{ path: '/collections', query: { trash: 'true' } }"
+        @click="closeMenu"
+      >
         <li class="link-item">
           <Trash2 />
           Papelera
         </li>
       </router-link>
-      <router-link to="/" @click="closeMenu">
+      <!-- <router-link to="/" @click="closeMenu">
         <li class="link-item">
           <Info />
           App Info
@@ -99,7 +102,7 @@ import {
   Home,
   NotebookPen,
   // Info,
-  // Trash2,
+  Trash2,
   // Settings,
   MenuIcon,
   ChevronUp,

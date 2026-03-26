@@ -1,23 +1,32 @@
 <template>
   <div id="collection-layout">
-    <header>
+    <header v-if="!trash">
       <h2>Colecciones y notas</h2>
       <p>Cree colecciones personalizadas para guardar sus notas.</p>
     </header>
+    <header v-else>
+      <h2>Papelera de reciclaje</h2>
+      <p>Aquí encontrarás tus colecciones y notas eliminadas.</p>
+    </header>
     <div class="collection-container">
-      <CollectionList v-model:current-collection="currentCollection" />
+      <CollectionList
+        :trash="trash"
+        v-model:current-collection="currentCollection"
+      />
     </div>
     <div
       class="current-collection-title"
       v-if="currentCollection && currentCollection.name"
     >
-      <h4><ChevronRight /> {{ currentCollection.name }}</h4>
-      <button class="btn-primary" @click="openCreateNoteForm()">
+      <h4>
+        <ChevronRight /> {{ formatCollectionName(currentCollection.name) }}
+      </h4>
+      <button v-if="!trash" class="btn-primary" @click="openCreateNoteForm()">
         <FilePlusCorner /> Crear nota
       </button>
     </div>
     <div v-if="currentCollection" class="notes-container">
-      <NoteBoard :collection="currentCollection?.id!" />
+      <NoteBoard :only-deleted="trash" :collection="currentCollection?.id!" />
     </div>
     <div v-else class="no-current-collection-state">
       <img
@@ -30,26 +39,47 @@
   </div>
 </template>
 <script setup lang="ts">
+import { ref, watch, onBeforeMount } from "vue";
 import CollectionList from "../components/CollectionList.vue";
 import NoteBoard from "../components/NoteBoard.vue";
-import { ref } from "vue";
 import { FilePlusCorner, ChevronRight } from "lucide-vue-next";
 import { useNoteFormStore } from "../stores/useNoteFormStore";
+import { useRoute } from "vue-router";
 import type { Collection } from "../models/collection";
 import type { NoteFormStoreOptions } from "../types/note.form.options";
 
+const trash = ref(false);
 const currentCollection = ref<Collection | null>(null);
 const { openForm } = useNoteFormStore();
+const route = useRoute();
 
 function openCreateNoteForm() {
   const opts: NoteFormStoreOptions = {
-    isTemporary: false,
+    isTemporary: currentCollection.value?.id === 2,
     note: null,
     collectionId: currentCollection.value?.id!,
     formMode: "create",
   };
   openForm(opts);
 }
+
+function formatCollectionName(collectionName: string) {
+  if (trash) {
+    collectionName = collectionName.split(":")[0] || collectionName;
+  }
+  return collectionName;
+}
+
+watch(
+  () => route.query.trash,
+  (paramChanged) => {
+    trash.value = paramChanged === "true" ? true : false;
+    currentCollection.value = null;
+  },
+);
+onBeforeMount(() => {
+  trash.value = route.query.trash === "true" ? true : false;
+});
 </script>
 
 <style scoped>

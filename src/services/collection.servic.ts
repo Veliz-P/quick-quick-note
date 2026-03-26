@@ -103,10 +103,6 @@ export class CollectionService {
   }
 
   static async getCollections(
-    // lastKey?: string | null,
-    // pageSize: number = 30,
-    // onlyDeleted: boolean = false,
-    // search: string = "",
     opts: GetAllOpts,
   ): Promise<ResultPattern<PaginatedResult<Collection>>> {
     try {
@@ -155,7 +151,15 @@ export class CollectionService {
     try {
       if (!id || id <= 0) throw new Error("ID inválido");
       const collectionDetail = await CollectionRepository.get(id);
-      if (!collectionDetail) throw new Error("Collection not found");
+      if (!collectionDetail)
+        throw new Error("No se pudo encontrar la colección");
+      const originalName =
+        collectionDetail.name.split(":")[0] || collectionDetail.name;
+      const exists = await CollectionRepository.exists(originalName);
+      if (exists)
+        throw new Error(
+          "No se puede restaurar la colección, ya existe otra con el mismo nombre",
+        );
       const restored = await CollectionRepository.restore(collectionDetail);
       return ok(restored);
     } catch (err) {

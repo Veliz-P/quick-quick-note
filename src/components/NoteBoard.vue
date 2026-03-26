@@ -50,7 +50,13 @@
               class="extra-options"
             >
               <ul>
-                <li @click="duplicateNote(item as Note)">
+                <li
+                  v-if="onlyDeleted"
+                  @click="restoreDeletedNote(item as Note)"
+                >
+                  <button><ArchiveRestore :size="20" /> Restaurar</button>
+                </li>
+                <li v-if="!onlyDeleted" @click="duplicateNote(item as Note)">
                   <button><Copy :size="20" /> Duplicar</button>
                 </li>
                 <li @click="openCollectionSelector()">
@@ -59,7 +65,7 @@
                 <li @click="deleteNote()" class="delete-item">
                   <button><Trash2 :size="20" /> Borrar</button>
                 </li>
-                <li>
+                <li v-if="!onlyDeleted">
                   <input v-model="deletePermanently" type="checkbox" />
                   <label>¿Borrar sin papelera?</label>
                 </li>
@@ -77,8 +83,16 @@
         <NotepadText :size="45" />
       </div>
     </div>
-    <h3><strong>Colección vacía</strong></h3>
-    <p>Agrega nuevas notas para comenzar.</p>
+    <h3>
+      <strong> Colección vacía </strong>
+    </h3>
+    <p>
+      {{
+        onlyDeleted
+          ? "No hay notas borradas en esta colección."
+          : "Agrega nuevas notas para comenzar."
+      }}
+    </p>
   </div>
 
   <div class="popup-layout" v-if="isCollectionSearcherVisible">
@@ -100,6 +114,7 @@ import {
   Copy,
   MoveUpRight,
   Trash2,
+  ArchiveRestore,
   NotepadText,
 } from "lucide-vue-next";
 import { useToastStore } from "../stores/useToastStore";
@@ -126,7 +141,7 @@ const permanentDeleteOpts: ConfirmationDialogOptions = {
   confirmText: "Sí, borrar permanentemente",
   cancelText: "No, cancelar",
 };
-
+const deletePermanently = ref(false);
 const notes = ref<NoteCard[]>([]);
 const pageSize = 5;
 let currentCursor: unknown | null = null;
@@ -139,9 +154,11 @@ const isCollectionSearcherVisible = ref(false);
 
 interface Props {
   collection?: number | defaultCollectionId;
+  onlyDeleted?: boolean;
 }
 const props = withDefaults(defineProps<Props>(), {
   collection: 1, // 1 is default collection
+  onlyDeleted: false,
 });
 
 async function fetchNotes() {
@@ -150,6 +167,7 @@ async function fetchNotes() {
     collection: props.collection,
     pageSize,
     lastKey: cursor,
+    onlyDeleted: props.onlyDeleted,
   };
   const result = await NoteService.getNotes(fetchOpts);
   if (!result.success) {
@@ -198,7 +216,10 @@ async function refreshNotes() {
   hasMore = true;
   isLoading = false;
   realNotesLength.value = 0;
-  const result = await NoteService.getCount(props.collection);
+  const result = await NoteService.getCount(
+    props.collection,
+    props.onlyDeleted,
+  );
   if (!result.success) {
     showToast("error", result.error);
     return;
@@ -213,8 +234,6 @@ async function refreshNotes() {
   }, 50);
 }
 
-const deletePermanently = ref(false);
-
 watch(
   () => shouldReload.value,
   async (newVal) => {
@@ -226,10 +245,16 @@ watch(
 
 watch(
   () => props.collection,
-  async (newVal, oldVal) => {
-    if (newVal !== oldVal) {
-      await refreshNotes();
-    }
+  async () => {
+    await refreshNotes();
+  },
+);
+
+watch(
+  () => props.onlyDeleted,
+  async (newVal) => {
+    deletePermanently.value = newVal;
+    await refreshNotes();
   },
 );
 
@@ -296,6 +321,18 @@ async function deleteNote() {
   }
 }
 
+async function restoreDeletedNote(note: Note) {
+  if (!note || !note.id) return;
+  const result = await NoteService.restoreNote(note.id);
+  if (!result.success) {
+    showToast("error", result.error);
+    return;
+  }
+  showToast("success", "Nota restaurada");
+  toggleExtraOptions();
+  await refreshNotes();
+}
+
 function openCollectionSelector() {
   isCollectionSearcherVisible.value = true;
 }
@@ -336,6 +373,7 @@ onMounted(async () => {
   interval = setInterval(() => {
     now.value = new Date();
   }, 1000);
+  deletePermanently.value = props.onlyDeleted;
 });
 
 onBeforeUnmount(() => {
