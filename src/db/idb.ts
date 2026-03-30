@@ -39,12 +39,14 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
         name: "default",
         createdAt: new Date().toISOString(),
         isDeleted: false,
+        hasDeletedNotes: false,
       };
       const temporaryCollection: Collection = {
         id: 2,
         name: "temporary",
         createdAt: new Date().toISOString(),
         isDeleted: false,
+        hasDeletedNotes: false,
       };
 
       collections.add(defaultCollection);

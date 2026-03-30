@@ -109,7 +109,7 @@ import type { ConfirmationDialogOptions } from "../types/confirmation.options";
 import { useToastStore } from "../stores/useToastStore";
 import type { FormMode } from "../types/form.mode";
 import type { ResultPattern } from "../types/result.pattern";
-import type { GetAllOpts } from "../types/get.all.opts";
+import type { GetAllOptsCollections } from "../repositories/collection.repository";
 const { showToast } = useToastStore();
 
 interface Props {
@@ -218,10 +218,10 @@ async function fetchCollections() {
   if (isLoading.value) return;
   isLoading.value = true;
   const prevCursor = currentCursor || null;
-  const fetchOpts: GetAllOpts = {
+  const fetchOpts: GetAllOptsCollections = {
     lastKey: prevCursor,
-    // onlyDeleted: props.trash,
     fetchLevel: props.trash ? "all" : "active",
+    onlyWithDeletedNotes: props.trash,
   };
   const fetchResult = await CollectionService.getCollections(fetchOpts);
   if (!fetchResult.success) {

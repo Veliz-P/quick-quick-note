@@ -94,8 +94,13 @@ export class NoteService {
 
   static async softDeleteNote(id: number): Promise<ResultPattern<void>> {
     try {
-      if (!id || id <= 0) throw new Error("ID de nota inválido");
+      const note = await NoteRepository.get(id);
+      if (!note || !id || id <= 0) throw new Error("ID de nota inválido");
       await NoteRepository.softDelete(id);
+      const collection = await CollectionRepository.get(note.collectionId);
+      if (!collection) throw new Error("Colección no encontrada");
+      collection.hasDeletedNotes = true;
+      await CollectionRepository.update(collection);
       const { register } = useActionEventStore();
       register("note_soft_deleted");
       return ok();
@@ -137,6 +142,15 @@ export class NoteService {
         }
       }
       await NoteRepository.restore(note);
+      const collectionDeletedCount = await NoteRepository.getCount(
+        note.collectionId,
+        true,
+      );
+      let targetCollection = await CollectionRepository.get(note.collectionId);
+      if (targetCollection) {
+        targetCollection.hasDeletedNotes = collectionDeletedCount > 0;
+        await CollectionRepository.update(targetCollection);
+      }
       return ok();
     } catch (err) {
       console.error(err);

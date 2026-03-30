@@ -45,6 +45,7 @@ const collection = reactive<Collection>({
   name: "",
   createdAt: "",
   isDeleted: false,
+  hasDeletedNotes: false,
 });
 const collectionExists = ref(false);
 
@@ -126,6 +127,7 @@ function prefillForm() {
   collection.name = props.collection.name;
   collection.createdAt = props.collection.createdAt;
   collection.isDeleted = props.collection.isDeleted;
+  collection.hasDeletedNotes = props.collection.hasDeletedNotes;
 }
 
 onMounted(() => {

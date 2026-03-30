@@ -3,7 +3,7 @@ import { useActionEventStore } from "../stores/useActionEventStore";
 import type { Collection } from "../models/collection";
 import type { PaginatedResult } from "../types/paginated.result";
 import type { ResultPattern } from "../types/result.pattern";
-import type { GetAllOpts } from "../types/get.all.opts";
+import type { GetAllOptsCollections } from "../repositories/collection.repository";
 import { ok, error, handleErrorMsg } from "../utils/error.helpers";
 
 export class CollectionService {
@@ -103,7 +103,7 @@ export class CollectionService {
   }
 
   static async getCollections(
-    opts: GetAllOpts,
+    opts: GetAllOptsCollections,
   ): Promise<ResultPattern<PaginatedResult<Collection>>> {
     try {
       const result = await CollectionRepository.getAll(opts);

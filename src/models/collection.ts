@@ -3,4 +3,5 @@ export interface Collection {
   name: string;
   createdAt: string;
   isDeleted: boolean;
+  hasDeletedNotes: boolean;
 }

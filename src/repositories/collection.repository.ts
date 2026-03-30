@@ -5,6 +5,10 @@ import type { Collection } from "../models/collection";
 import type { GetAllOpts, FetchLevel } from "../types/get.all.opts";
 import type { Note } from "../models/note";
 
+export interface GetAllOptsCollections extends GetAllOpts {
+  onlyWithDeletedNotes?: boolean | undefined;
+}
+
 export class CollectionRepository {
   static async create(collectionName: string): Promise<Collection> {
     const db = await dbPromise;
@@ -12,6 +16,7 @@ export class CollectionRepository {
       name: collectionName,
       createdAt: new Date().toISOString(),
       isDeleted: false,
+      hasDeletedNotes: false,
     };
     const id = await db.add(stores.COLLECTIONS, newCollection);
     let parsedId = Number(id);
@@ -77,15 +82,32 @@ export class CollectionRepository {
     return false;
   }
 
-  static async getAll(opts: GetAllOpts): Promise<PaginatedResult<Collection>> {
+  private static async matchesOnlyWithDeletedNotes(
+    collection: Collection,
+    onlyWithDeletedNotes: boolean,
+  ) {
+    if (onlyWithDeletedNotes && !collection.hasDeletedNotes) return false;
+    return true;
+  }
+
+  static async getAll(
+    opts: GetAllOptsCollections,
+  ): Promise<PaginatedResult<Collection>> {
     if (!opts) throw new Error("Opciones inválidas");
-    let { pageSize, lastKey, search, exclude, fetchLevel } = opts;
+    let {
+      pageSize,
+      lastKey,
+      search,
+      exclude,
+      fetchLevel,
+      onlyWithDeletedNotes,
+    } = opts;
     pageSize = pageSize ?? 30;
     lastKey = (lastKey as string) ?? null;
-    // onlyDeleted = onlyDeleted ?? false;
     search = search ?? "";
     fetchLevel = fetchLevel ?? "active";
     exclude = exclude ?? []; // TODO: Implement exclude id logic
+    onlyWithDeletedNotes = onlyWithDeletedNotes ?? false;
 
     const db = await dbPromise;
     const tx = db.transaction(stores.COLLECTIONS, "readonly");
@@ -107,7 +129,12 @@ export class CollectionRepository {
         cursor.value,
         fetchLevel,
       );
-      if (matchesFetchLevel && matchesSearch) {
+      const matchesOnlyWithDeletedNotes =
+        await this.matchesOnlyWithDeletedNotes(
+          cursor.value,
+          onlyWithDeletedNotes,
+        );
+      if (matchesFetchLevel && matchesSearch && matchesOnlyWithDeletedNotes) {
         collections.push(cursor.value);
       }
       cursor = await cursor.continue();
