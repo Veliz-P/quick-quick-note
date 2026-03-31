@@ -33,12 +33,12 @@
       </router-link> -->
     </ul>
 
-    <!-- <router-link to="/" id="settings">
+    <router-link to="/settings" id="settings">
       <div class="link-item">
         <Settings />
         Ajustes
       </div>
-    </router-link> -->
+    </router-link>
   </nav>
 
   <nav id="sidebar-mobile">
@@ -86,12 +86,12 @@
           <Info />
           App Info
         </li>
-      </router-link>
-      <router-link to="/" @click="closeMenu">
+      </router-link> -->
+      <router-link to="/settings" @click="closeMenu">
         <li>
           <button id="settings-btn-mobile"><Settings /> Ajustes</button>
         </li>
-      </router-link> -->
+      </router-link>
     </ul>
   </nav>
 </template>
@@ -103,7 +103,7 @@ import {
   NotebookPen,
   // Info,
   Trash2,
-  // Settings,
+  Settings,
   MenuIcon,
   ChevronUp,
 } from "lucide-vue-next";

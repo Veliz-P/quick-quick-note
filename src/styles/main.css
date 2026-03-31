@@ -158,7 +158,8 @@ textarea:focus {
   accent-color: var(--secondary-300);
 }
 
-input[type="checkbox"] {
+input[type="checkbox"],
+input[type="radio"] {
   accent-color: var(--secondary-400);
 }
 
