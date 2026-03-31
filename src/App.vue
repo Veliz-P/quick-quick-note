@@ -3,14 +3,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onBeforeMount } from "vue";
 import { RouterView } from "vue-router";
 import { ColorService } from "./services/colors.servic";
+import { ThemeService } from "./services/theme.servic";
 
-onMounted(() => {
-  const currentColorSet = ColorService.getCurrentColorSet();
-  if (!currentColorSet) {
-    ColorService.resetColorSet();
-  }
+onBeforeMount(() => {
+  ColorService.checkConfig();
+  ThemeService.checkConfig();
 });
 </script>

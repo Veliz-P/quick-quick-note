@@ -9,27 +9,33 @@ export const availableColorSets = {
 export type ColorSet =
   (typeof availableColorSets)[keyof typeof availableColorSets];
 
+export type ColorSetKey = keyof typeof availableColorSets;
+
 export class ColorService {
-  static getCurrentColorSet(): ColorSet | null {
-    const json = localStorage.getItem("cardColors");
-    if (!json) {
-      return null;
+  static checkConfig() {
+    const savedKey = localStorage.getItem("colorSetKey");
+    if (!savedKey || !availableColorSets[savedKey as ColorSetKey]) {
+      localStorage.setItem("colorSetKey", "a");
     }
-    return JSON.parse(json);
   }
-
-  static changeColorSet(colorSet: ColorSet): void {
-    const json = JSON.stringify(colorSet);
-    localStorage.setItem("cardColors", json);
+  static getCurrentColorSet(): ColorSet {
+    const savedKey = localStorage.getItem("colorSetKey");
+    if (!savedKey || !availableColorSets[savedKey as ColorSetKey]) {
+      return availableColorSets.a;
+    }
+    return availableColorSets[savedKey as ColorSetKey];
   }
-
-  static resetColorSet(): void {
-    localStorage.removeItem("cardColors");
-    const json = JSON.stringify(availableColorSets.a);
-    localStorage.setItem("cardColors", json);
+  static setColorSetKey(colorSetKey: ColorSetKey) {
+    localStorage.setItem("colorSetKey", colorSetKey);
   }
-
-  static getRandomColor(): string {
+  static getColorSetKey(): ColorSetKey {
+    return (localStorage.getItem("colorSetKey") as ColorSetKey) || "a";
+  }
+  static resetColorSet() {
+    localStorage.removeItem("colorSetKey");
+    localStorage.setItem("colorSetKey", "a");
+  }
+  static getRandomColor() {
     const colorSet = this.getCurrentColorSet();
     if (!colorSet) return "#6366F1";
     return colorSet[Math.floor(Math.random() * colorSet.length)] || "#6366F1";

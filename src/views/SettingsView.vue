@@ -35,13 +35,21 @@
             <li>
               <h4>Tema principal</h4>
               <div class="theme-options">
-                <div class="theme-option light-theme">
+                <div
+                  @click="setTheme('light')"
+                  class="theme-option light-theme"
+                  :class="themeMode === 'light' ? 'active-setting' : ''"
+                >
                   <div>
                     <Sun :stroke-width="1.5" :size="30" />
                   </div>
                   <p>Modo claro</p>
                 </div>
-                <div class="theme-option dark-theme">
+                <div
+                  @click="setTheme('dark')"
+                  class="theme-option dark-theme"
+                  :class="themeMode === 'dark' ? 'active-setting' : ''"
+                >
                   <div>
                     <Moon :stroke-width="1.5" :size="30" />
                   </div>
@@ -57,6 +65,7 @@
                     class="color-set"
                     v-for="key in Object.keys(availableColorSets)"
                     :key="key"
+                    @click="setColorSet(key as ColorSetKey)"
                   >
                     <p>{{ key }}</p>
                     <div
@@ -64,7 +73,12 @@
                       v-for="color in getColorSet(key)"
                       :style="{ backgroundColor: color }"
                     ></div>
-                    <input type="radio" name="color-set" :value="key" />
+                    <input
+                      type="radio"
+                      name="color-set"
+                      :value="key"
+                      :checked="key === colorSetKey"
+                    />
                   </li>
                 </ul>
               </div>
@@ -96,6 +110,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from "vue";
 import {
   Palette,
   Lock,
@@ -106,10 +121,32 @@ import {
   Moon,
 } from "lucide-vue-next";
 import { availableColorSets } from "../services/colors.servic";
+import { ThemeService } from "../services/theme.servic";
+import { ColorService } from "../services/colors.servic";
+import type { Theme } from "../services/theme.servic";
+import type { ColorSetKey } from "../services/colors.servic";
+
+const themeMode = ref<Theme>("light");
+const colorSetKey = ref<ColorSetKey>("a");
 
 function getColorSet(key: string) {
   return availableColorSets[key as keyof typeof availableColorSets];
 }
+
+function setTheme(theme: Theme) {
+  themeMode.value = theme;
+  ThemeService.setTheme(theme);
+}
+
+function setColorSet(key: ColorSetKey) {
+  colorSetKey.value = key;
+  ColorService.setColorSetKey(key);
+}
+
+onMounted(() => {
+  themeMode.value = ThemeService.getTheme() || "light";
+  colorSetKey.value = ColorService.getColorSetKey();
+});
 </script>
 
 <style scoped>
@@ -121,19 +158,16 @@ h2 + p {
   color: var(--text-muted);
   margin-bottom: var(--space-8);
 }
-
 #settings-layout {
   display: flex;
   flex-direction: column;
 }
-
 #settings {
   display: flex;
   gap: var(--space-8);
   position: relative;
   flex-direction: column;
 }
-
 #settings-menu {
   position: sticky;
   top: 0;
@@ -145,7 +179,6 @@ h2 + p {
   overflow-x: auto;
   padding-bottom: var(--space-2);
 }
-
 #settings-menu li {
   cursor: pointer;
   display: flex;
@@ -160,11 +193,10 @@ h2 + p {
 .setting-icon {
   color: var(--text-muted);
 }
-
 #settings-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-6);
   width: 100%;
   max-width: 850px;
 }
@@ -267,14 +299,10 @@ h2 + p {
     gap: var(--space-16);
     flex-direction: row;
   }
-
   #settings-menu {
-    position: sticky;
-    top: 0;
     flex-direction: column;
     gap: var(--space-12);
   }
-
   #settings-menu li {
     align-items: center;
     gap: var(--space-2);
@@ -286,11 +314,15 @@ h2 + p {
   }
   .options-list > li {
     flex-direction: row;
-    margin-bottom: var(--space-12);
+    margin-bottom: var(--space-8);
   }
   .accent-color-sets {
     flex-direction: column;
     flex-wrap: nowrap;
   }
+}
+
+.active-setting {
+  border-color: var(--secondary-300);
 }
 </style>
