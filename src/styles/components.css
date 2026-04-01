@@ -70,6 +70,24 @@
   width: 0%;
 }
 
+.btn-danger {
+  background-color: var(--error-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  color: var(--light);
+  border-radius: var(--rounded-md);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.btn-danger:hover {
+  background-color: var(--error-600);
+}
+
 .popup-layout {
   position: fixed;
   inset: 0;

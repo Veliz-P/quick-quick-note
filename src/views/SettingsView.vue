@@ -88,21 +88,70 @@
         <section class="settings-section">
           <h3>Permisos <Lock /></h3>
           <p>Administra los permisos de la app</p>
+          <ul class="options-list">
+            <li>
+              <h4>Notificar notas expiradas</h4>
+              <ToggleButton />
+            </li>
+            <li>
+              <h4>Habilitar historial de actividad</h4>
+              <ToggleButton />
+            </li>
+          </ul>
         </section>
         <section class="settings-section">
           <h3>Notas <NotepadText /></h3>
-          <p>Ajusta el comportamiento de tus notas.</p>
+          <p>Ajusta el comportamiento de sus notas.</p>
+          <ul class="options-list">
+            <li>
+              <h4>Duración predeterminada de notas temporales</h4>
+              <!--TODO: add duration picker-->
+            </li>
+          </ul>
         </section>
         <section class="settings-section">
           <h3>Colecciones <Folder /></h3>
-          <p>Ajusta el comportamiento de tus colecciones.</p>
+          <p>Ajusta el comportamiento de sus colecciones.</p>
+          <ul class="options-list">
+            <li>
+              <div>
+                <h4>Nro máximo de notas por colección</h4>
+                <p>Solo se aplicará a nuevas colecciones.</p>
+              </div>
+              <input class="setting-num-input" type="number" min="1" />
+            </li>
+          </ul>
         </section>
         <section class="settings-section">
+          <h3>Papelera de reciclaje <Trash /></h3>
+          <p>Decida cómo se eliminan sus notas y colecciones.</p>
+          <ul class="options-list">
+            <li>
+              <div>
+                <h4>Habilitar papelera de reciclaje</h4>
+                <p class="warning-text">
+                  Deshabilitar la opción hará que las notas y colecciones se
+                  eliminen definitivamente.
+                </p>
+              </div>
+              <ToggleButton />
+            </li>
+            <li>
+              <h4>Días de duración de la papelera</h4>
+              <input class="setting-num-input" type="number" min="1" />
+            </li>
+          </ul>
+        </section>
+        <section class="settings-section danger-zone">
           <h3>Zona de peligro <AlertTriangle /></h3>
           <p>
             Acciones que pueden alterar el funcionamiento de la app o los datos
-            de tu cuenta.
+            de su cuenta.
           </p>
+          <div class="danger-options">
+            <button class="btn-danger">Restablecer configuraciones</button>
+            <button class="btn-danger">Borrar datos</button>
+          </div>
         </section>
       </section>
     </section>
@@ -119,10 +168,12 @@ import {
   AlertTriangle,
   Sun,
   Moon,
+  Trash,
 } from "lucide-vue-next";
 import { availableColorSets } from "../services/colors.servic";
 import { ThemeService } from "../services/theme.servic";
 import { ColorService } from "../services/colors.servic";
+import ToggleButton from "../components/ToggleButton.vue";
 import type { Theme } from "../services/theme.servic";
 import type { ColorSetKey } from "../services/colors.servic";
 
@@ -200,18 +251,19 @@ h2 + p {
   width: 100%;
   max-width: 850px;
 }
-.settings-section > h3 {
+.settings-section > h3,
+.danger-zone > h3 {
   font-size: var(--fs-md);
   display: flex;
   align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-1);
 }
-.settings-section > p {
+.settings-section > p,
+.danger-zone > p {
   color: var(--text-muted);
   margin-bottom: var(--space-6);
 }
-
 .options-list {
   list-style: none;
 }
@@ -223,6 +275,10 @@ h2 + p {
   margin-bottom: var(--space-6);
   padding-bottom: var(--space-6);
   border-bottom: 1px solid var(--border);
+}
+.options-list > li > div > h4 + p {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
 }
 .theme-options {
   display: flex;
@@ -293,8 +349,44 @@ h2 + p {
   height: 25px;
   border-radius: var(--rounded-full);
 }
+.setting-num-input {
+  width: auto;
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-left: auto;
+}
+.warning-text {
+  color: var(--warning-800) !important;
+  background-color: var(--warning-200);
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
+  border-radius: var(--rounded-lg);
+}
+.dark .warning-text {
+  background-color: var(--warning-800);
+  color: var(--warning-200) !important;
+}
+.danger-zone {
+  border: 2px solid var(--error-400);
+  padding: var(--space-6);
+  border-radius: var(--rounded-xl);
+}
+.danger-zone > h3 {
+  color: var(--error-500);
+}
+.dark .danger-zone > h3 {
+  color: var(--error-400);
+}
+.danger-options {
+  display: flex;
+  gap: var(--space-4);
+  flex-direction: column;
+}
+.danger-options .btn-danger {
+  margin-right: auto;
+}
 
-@media (min-width: 768px) {
+@media (min-width: 979px) {
   #settings {
     gap: var(--space-16);
     flex-direction: row;
