@@ -67,7 +67,6 @@
                     :key="key"
                     @click="setColorSet(key as ColorSetKey)"
                   >
-                    <p>{{ key }}</p>
                     <div
                       class="color"
                       v-for="color in getColorSet(key)"
@@ -89,13 +88,21 @@
           <h3>Permisos <Lock /></h3>
           <p>Administra los permisos de la app</p>
           <ul class="options-list">
-            <li>
+            <li
+              @click="
+                permissionSettings.setNotifyExpiredNotes(notifyExpiredNotes)
+              "
+            >
               <h4>Notificar notas expiradas</h4>
               <ToggleButton v-model:checked="notifyExpiredNotes" />
             </li>
-            <li>
+            <li
+              @click="
+                permissionSettings.setShowActivityHistory(showActivityHistory)
+              "
+            >
               <h4>Habilitar historial de actividad</h4>
-              <ToggleButton v-model:checked="activityHistory" />
+              <ToggleButton v-model:checked="showActivityHistory" />
             </li>
           </ul>
         </section>
@@ -286,14 +293,16 @@ import { availableColorSets } from "../stores/useThemeSettingsStore";
 import ToggleButton from "../components/ToggleButton.vue";
 import { formatDate } from "../utils/date";
 import { useThemeSettingsStore } from "../stores/useThemeSettingsStore";
-const themeSettings = useThemeSettingsStore();
+import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
 import type { Theme } from "../stores/useThemeSettingsStore";
 import type { ColorSetKey } from "../stores/useThemeSettingsStore";
 
+const themeSettings = useThemeSettingsStore();
+const permissionSettings = usePermissionSettingsStore();
 const themeMode = ref<Theme>("light");
 const colorSetKey = ref<ColorSetKey>("a");
 const notifyExpiredNotes = ref(false);
-const activityHistory = ref(true);
+const showActivityHistory = ref(true);
 const MIN_NOTES_PER_COLLECTION = 1;
 const MAX_NOTES_PER_COLLECTION = 1000;
 const DEFAULT_NOTES_PER_COLLECTION = 100;
@@ -329,6 +338,8 @@ function setColorSet(key: ColorSetKey) {
 onMounted(() => {
   themeMode.value = themeSettings.getTheme();
   colorSetKey.value = themeSettings.getColorSetKey();
+  notifyExpiredNotes.value = permissionSettings.getNotifyExpiredNotes();
+  showActivityHistory.value = permissionSettings.getShowActivityHistory();
 });
 
 function sanitizeNumberInput(rawValue: string) {
