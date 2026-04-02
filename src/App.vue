@@ -5,11 +5,10 @@
 <script setup lang="ts">
 import { onBeforeMount } from "vue";
 import { RouterView } from "vue-router";
-import { ColorService } from "./services/colors.servic";
-import { ThemeService } from "./services/theme.servic";
+import { useThemeSettingsStore } from "./stores/useThemeSettingsStore";
+const { loadThemeConfig } = useThemeSettingsStore();
 
 onBeforeMount(() => {
-  ColorService.checkConfig();
-  ThemeService.checkConfig();
+  loadThemeConfig();
 });
 </script>

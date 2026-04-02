@@ -86,7 +86,8 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted, watch, type Ref } from "vue";
 import { storeToRefs } from "pinia";
-import { ColorService } from "../services/colors.servic";
+import { useThemeSettingsStore } from "../stores/useThemeSettingsStore";
+const themeSettings = useThemeSettingsStore();
 import { ExpirationNoteService } from "../services/expiration.note.servic";
 import { NoteService } from "../services/notes.servic";
 import { buildDate, getOnlyDate, formatHour } from "../utils/date";
@@ -236,7 +237,7 @@ function preFillForm() {
 }
 
 onMounted(() => {
-  wrapperColor.value = ColorService.getRandomColor();
+  wrapperColor.value = themeSettings.getRandomColor();
   formMode.value = options.value.formMode as FormMode;
   preFillForm();
 });

@@ -282,13 +282,13 @@ import {
   Plus,
   Minus,
 } from "lucide-vue-next";
-import { availableColorSets } from "../services/colors.servic";
-import { ThemeService } from "../services/theme.servic";
-import { ColorService } from "../services/colors.servic";
+import { availableColorSets } from "../stores/useThemeSettingsStore";
 import ToggleButton from "../components/ToggleButton.vue";
 import { formatDate } from "../utils/date";
-import type { Theme } from "../services/theme.servic";
-import type { ColorSetKey } from "../services/colors.servic";
+import { useThemeSettingsStore } from "../stores/useThemeSettingsStore";
+const themeSettings = useThemeSettingsStore();
+import type { Theme } from "../stores/useThemeSettingsStore";
+import type { ColorSetKey } from "../stores/useThemeSettingsStore";
 
 const themeMode = ref<Theme>("light");
 const colorSetKey = ref<ColorSetKey>("a");
@@ -318,17 +318,17 @@ function getColorSet(key: string) {
 
 function setTheme(theme: Theme) {
   themeMode.value = theme;
-  ThemeService.setTheme(theme);
+  themeSettings.setTheme(theme);
 }
 
 function setColorSet(key: ColorSetKey) {
   colorSetKey.value = key;
-  ColorService.setColorSetKey(key);
+  themeSettings.setColorSetKey(key);
 }
 
 onMounted(() => {
-  themeMode.value = ThemeService.getTheme() || "light";
-  colorSetKey.value = ColorService.getColorSetKey();
+  themeMode.value = themeSettings.getTheme();
+  colorSetKey.value = themeSettings.getColorSetKey();
 });
 
 function sanitizeNumberInput(rawValue: string) {

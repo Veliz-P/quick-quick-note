@@ -107,7 +107,8 @@
 import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { NoteService } from "../services/notes.servic";
-import { ColorService } from "../services/colors.servic";
+import { useThemeSettingsStore } from "../stores/useThemeSettingsStore";
+const themeSettings = useThemeSettingsStore();
 import { formatDate, formatHour, formatTimeLeft } from "../utils/date";
 import {
   Ellipsis,
@@ -182,7 +183,7 @@ async function fetchNotes() {
     .filter((note) => !existingIds.has(note.id))
     .map((note) => ({
       ...note,
-      color: ColorService.getRandomColor(),
+      color: themeSettings.getRandomColor(),
     }));
   notes.value.push(...newItems);
 }
