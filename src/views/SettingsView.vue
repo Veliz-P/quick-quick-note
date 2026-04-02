@@ -115,9 +115,13 @@
                 <h4>Duración predeterminada de notas temporales</h4>
                 <p>
                   Las nuevas notas expirarán en:
-                  <span style="text-transform: capitalize">{{
-                    expirationDateEstimation
-                  }}</span>
+                  <span style="text-transform: capitalize">
+                    {{ expirationDateEstimation }}
+                  </span>
+                  a las
+                  {{ temporaryNotesDuration.hour }}:
+                  {{ temporaryNotesDuration.minute }}
+                  {{ temporaryNotesDuration.hour > 11 ? "PM" : "AM" }}
                 </p>
               </div>
               <div id="time-picker">
@@ -294,11 +298,14 @@ import ToggleButton from "../components/ToggleButton.vue";
 import { formatDate } from "../utils/date";
 import { useThemeSettingsStore } from "../stores/useThemeSettingsStore";
 import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
+import { useNoteSettingsStore } from "../stores/useNoteSettingsStore";
 import type { Theme } from "../stores/useThemeSettingsStore";
 import type { ColorSetKey } from "../stores/useThemeSettingsStore";
+import type { TemporaryNotesDuration } from "../stores/useNoteSettingsStore";
 
 const themeSettings = useThemeSettingsStore();
 const permissionSettings = usePermissionSettingsStore();
+const noteSettings = useNoteSettingsStore();
 const themeMode = ref<Theme>("light");
 const colorSetKey = ref<ColorSetKey>("a");
 const notifyExpiredNotes = ref(false);
@@ -314,7 +321,7 @@ const MIN_RECYCLE_BIN_DURATION = 1;
 const DEFAULT_RECYCLE_BIN_DURATION = 30;
 const recycleBinDuration = ref(DEFAULT_RECYCLE_BIN_DURATION); // * days
 const invalidRecycleBinDuration = ref(false);
-const temporaryNotesDuration = ref({
+const temporaryNotesDuration = ref<TemporaryNotesDuration>({
   days: 1,
   hour: 0,
   minute: 0,
@@ -340,6 +347,7 @@ onMounted(() => {
   colorSetKey.value = themeSettings.getColorSetKey();
   notifyExpiredNotes.value = permissionSettings.getNotifyExpiredNotes();
   showActivityHistory.value = permissionSettings.getShowActivityHistory();
+  temporaryNotesDuration.value = noteSettings.getTemporaryNotesDuration();
 });
 
 function sanitizeNumberInput(rawValue: string) {
@@ -409,6 +417,7 @@ watch(
       temporaryNotesDuration.value.hour = 23;
       temporaryNotesDuration.value.minute = 59;
     }
+    noteSettings.setTemporaryNotesDuration(temporaryNotesDuration.value);
   },
   { deep: true },
 );
@@ -644,8 +653,8 @@ h2 + p {
   padding: 0 var(--space-4);
 }
 #time-picker input {
-  width: 100%;
-  max-width: 40px;
+  width: 40px;
+  flex-shrink: 0;
   background-color: var(--bg);
   text-align: center;
 }
