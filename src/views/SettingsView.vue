@@ -196,7 +196,7 @@
             <li>
               <div>
                 <h4>Nro máximo de notas por colección</h4>
-                <p>Solo se aplicará a nuevas colecciones.</p>
+                <p>El límite solo se aplicará a nuevas colecciones.</p>
               </div>
               <div class="input-with-error-div">
                 <div style="position: relative">
@@ -208,6 +208,7 @@
                     v-model="maxNotesPerCollection"
                   />
                   <RotateCcw
+                    @click="maxNotesPerCollection = previousMaxNotes"
                     :size="21"
                     class="clear-input-icon"
                     role="button"
@@ -296,9 +297,11 @@ import {
 import { availableColorSets } from "../stores/useThemeSettingsStore";
 import ToggleButton from "../components/ToggleButton.vue";
 import { formatDate } from "../utils/date";
+import { debounce } from "../utils/debounce";
 import { useThemeSettingsStore } from "../stores/useThemeSettingsStore";
 import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
 import { useNoteSettingsStore } from "../stores/useNoteSettingsStore";
+import { useCollectionSettings } from "../stores/useCollectionSettings";
 import type { Theme } from "../stores/useThemeSettingsStore";
 import type { ColorSetKey } from "../stores/useThemeSettingsStore";
 import type { TemporaryNotesDuration } from "../stores/useNoteSettingsStore";
@@ -306,6 +309,7 @@ import type { TemporaryNotesDuration } from "../stores/useNoteSettingsStore";
 const themeSettings = useThemeSettingsStore();
 const permissionSettings = usePermissionSettingsStore();
 const noteSettings = useNoteSettingsStore();
+const collectionSettings = useCollectionSettings();
 const themeMode = ref<Theme>("light");
 const colorSetKey = ref<ColorSetKey>("a");
 const notifyExpiredNotes = ref(false);
@@ -314,6 +318,7 @@ const MIN_NOTES_PER_COLLECTION = 1;
 const MAX_NOTES_PER_COLLECTION = 1000;
 const DEFAULT_NOTES_PER_COLLECTION = 100;
 const maxNotesPerCollection = ref(DEFAULT_NOTES_PER_COLLECTION);
+let previousMaxNotes = DEFAULT_NOTES_PER_COLLECTION;
 const invalidNotesPerColl = ref(false);
 const enableRecycleBin = ref(true);
 const MAX_RECYCLE_BIN_DURATION = 60;
@@ -348,6 +353,8 @@ onMounted(() => {
   notifyExpiredNotes.value = permissionSettings.getNotifyExpiredNotes();
   showActivityHistory.value = permissionSettings.getShowActivityHistory();
   temporaryNotesDuration.value = noteSettings.getTemporaryNotesDuration();
+  maxNotesPerCollection.value = collectionSettings.getMaxNotesPerCollection();
+  previousMaxNotes = maxNotesPerCollection.value;
 });
 
 function sanitizeNumberInput(rawValue: string) {
@@ -356,8 +363,8 @@ function sanitizeNumberInput(rawValue: string) {
   return isNaN(Number(replacedValue)) ? 0 : Number(replacedValue);
 }
 watch(
-  () => maxNotesPerCollection.value,
-  (newLimit, oldLimit) => {
+  maxNotesPerCollection,
+  debounce((newLimit: number, oldLimit: number) => {
     if (newLimit === oldLimit) return;
     maxNotesPerCollection.value = sanitizeNumberInput(String(newLimit));
     const parsedLimit = maxNotesPerCollection.value;
@@ -369,25 +376,24 @@ watch(
       return;
     }
     invalidNotesPerColl.value = false;
-  },
+    collectionSettings.setMaxNotesPerCollection(parsedLimit);
+    previousMaxNotes = parsedLimit;
+  }),
 );
 
-watch(
-  () => recycleBinDuration.value,
-  (newLimit, oldLimit) => {
-    if (newLimit === oldLimit) return;
-    recycleBinDuration.value = sanitizeNumberInput(String(newLimit));
-    const parsedLimit = recycleBinDuration.value;
-    if (
-      parsedLimit < MIN_RECYCLE_BIN_DURATION ||
-      parsedLimit > MAX_RECYCLE_BIN_DURATION
-    ) {
-      invalidRecycleBinDuration.value = true;
-      return;
-    }
-    invalidRecycleBinDuration.value = false;
-  },
-);
+watch(recycleBinDuration, (newLimit, oldLimit) => {
+  if (newLimit === oldLimit) return;
+  recycleBinDuration.value = sanitizeNumberInput(String(newLimit));
+  const parsedLimit = recycleBinDuration.value;
+  if (
+    parsedLimit < MIN_RECYCLE_BIN_DURATION ||
+    parsedLimit > MAX_RECYCLE_BIN_DURATION
+  ) {
+    invalidRecycleBinDuration.value = true;
+    return;
+  }
+  invalidRecycleBinDuration.value = false;
+});
 
 watch(
   () => temporaryNotesDuration.value,
