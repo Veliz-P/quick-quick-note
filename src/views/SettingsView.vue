@@ -91,11 +91,11 @@
           <ul class="options-list">
             <li>
               <h4>Notificar notas expiradas</h4>
-              <ToggleButton />
+              <ToggleButton v-model:checked="notifyExpiredNotes" />
             </li>
             <li>
               <h4>Habilitar historial de actividad</h4>
-              <ToggleButton />
+              <ToggleButton v-model:checked="activityHistory" />
             </li>
           </ul>
         </section>
@@ -118,7 +118,27 @@
                 <h4>Nro máximo de notas por colección</h4>
                 <p>Solo se aplicará a nuevas colecciones.</p>
               </div>
-              <input class="setting-num-input" type="number" min="1" />
+              <div class="input-with-error-div">
+                <div style="position: relative">
+                  <input
+                    class="setting-num-input"
+                    type="text"
+                    minlength="0"
+                    maxlength="4"
+                    v-model="maxNotesPerCollection"
+                  />
+                  <RotateCcw
+                    :size="21"
+                    class="clear-input-icon"
+                    role="button"
+                    v-if="invalidNotesPerColl"
+                  />
+                </div>
+                <span class="setting-error" v-if="invalidNotesPerColl"
+                  >El nro debe estar entre {{ MIN_NOTES_PER_COLLECTION }} y
+                  {{ MAX_NOTES_PER_COLLECTION }}</span
+                >
+              </div>
             </li>
           </ul>
         </section>
@@ -134,11 +154,31 @@
                   eliminen definitivamente.
                 </p>
               </div>
-              <ToggleButton />
+              <ToggleButton v-model:checked="enableRecycleBin" />
             </li>
             <li>
               <h4>Días de duración de la papelera</h4>
-              <input class="setting-num-input" type="number" min="1" />
+              <div class="input-with-error-div">
+                <div style="position: relative">
+                  <input
+                    class="setting-num-input"
+                    type="text"
+                    minlength="1"
+                    maxlength="2"
+                    v-model="recycleBinDuration"
+                  />
+                  <RotateCcw
+                    :size="21"
+                    class="clear-input-icon"
+                    role="button"
+                    v-if="invalidRecycleBinDuration"
+                  />
+                </div>
+                <span class="setting-error" v-if="invalidRecycleBinDuration"
+                  >El nro debe estar entre {{ MIN_RECYCLE_BIN_DURATION }} y
+                  {{ MAX_RECYCLE_BIN_DURATION }}</span
+                >
+              </div>
             </li>
           </ul>
         </section>
@@ -159,7 +199,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import {
   Palette,
   Lock,
@@ -169,6 +209,7 @@ import {
   Sun,
   Moon,
   Trash,
+  RotateCcw,
 } from "lucide-vue-next";
 import { availableColorSets } from "../services/colors.servic";
 import { ThemeService } from "../services/theme.servic";
@@ -179,6 +220,19 @@ import type { ColorSetKey } from "../services/colors.servic";
 
 const themeMode = ref<Theme>("light");
 const colorSetKey = ref<ColorSetKey>("a");
+const notifyExpiredNotes = ref(false);
+const activityHistory = ref(true);
+const MIN_NOTES_PER_COLLECTION = 1;
+const MAX_NOTES_PER_COLLECTION = 1000;
+const DEFAULT_NOTES_PER_COLLECTION = 100;
+const maxNotesPerCollection = ref(DEFAULT_NOTES_PER_COLLECTION);
+const invalidNotesPerColl = ref(false);
+const enableRecycleBin = ref(true);
+const MAX_RECYCLE_BIN_DURATION = 60;
+const MIN_RECYCLE_BIN_DURATION = 1;
+const DEFAULT_RECYCLE_BIN_DURATION = 30;
+const recycleBinDuration = ref(DEFAULT_RECYCLE_BIN_DURATION); // * days
+const invalidRecycleBinDuration = ref(false);
 
 function getColorSet(key: string) {
   return availableColorSets[key as keyof typeof availableColorSets];
@@ -198,6 +252,45 @@ onMounted(() => {
   themeMode.value = ThemeService.getTheme() || "light";
   colorSetKey.value = ColorService.getColorSetKey();
 });
+
+function sanitizeNumberInput(rawValue: string) {
+  const regex = /[^\d/]/g;
+  const replacedValue = rawValue.replace(regex, "");
+  return isNaN(Number(replacedValue)) ? 0 : Number(replacedValue);
+}
+watch(
+  () => maxNotesPerCollection.value,
+  (newLimit, oldLimit) => {
+    if (newLimit === oldLimit) return;
+    maxNotesPerCollection.value = sanitizeNumberInput(String(newLimit));
+    const parsedLimit = maxNotesPerCollection.value;
+    if (
+      parsedLimit < MIN_NOTES_PER_COLLECTION ||
+      parsedLimit > MAX_NOTES_PER_COLLECTION
+    ) {
+      invalidNotesPerColl.value = true;
+      return;
+    }
+    invalidNotesPerColl.value = false;
+  },
+);
+
+watch(
+  () => recycleBinDuration.value,
+  (newLimit, oldLimit) => {
+    if (newLimit === oldLimit) return;
+    recycleBinDuration.value = sanitizeNumberInput(String(newLimit));
+    const parsedLimit = recycleBinDuration.value;
+    if (
+      parsedLimit < MIN_RECYCLE_BIN_DURATION ||
+      parsedLimit > MAX_RECYCLE_BIN_DURATION
+    ) {
+      invalidRecycleBinDuration.value = true;
+      return;
+    }
+    invalidRecycleBinDuration.value = false;
+  },
+);
 </script>
 
 <style scoped>
@@ -350,10 +443,12 @@ h2 + p {
   border-radius: var(--rounded-full);
 }
 .setting-num-input {
-  width: auto;
+  /* width: auto;
   margin-top: auto;
   margin-bottom: auto;
-  margin-left: auto;
+  margin-left: auto; */
+  text-align: right;
+  background-color: var(--bg);
 }
 .warning-text {
   color: var(--warning-800) !important;
@@ -385,7 +480,29 @@ h2 + p {
 .danger-options .btn-danger {
   margin-right: auto;
 }
+.setting-error {
+  color: var(--error-500);
+  font-size: var(--fs-sm);
+}
 
+.dark .setting-error {
+  color: var(--error-400);
+}
+.input-with-error-div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  max-width: 220px;
+}
+.clear-input-icon {
+  position: absolute;
+  top: 50%;
+  left: 5%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--primary-500);
+}
 @media (min-width: 979px) {
   #settings {
     gap: var(--space-16);
