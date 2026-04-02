@@ -231,11 +231,13 @@
               <div>
                 <h4>Habilitar papelera de reciclaje</h4>
                 <p class="warning-text">
-                  Deshabilitar la opción hará que las notas y colecciones se
-                  eliminen definitivamente.
+                  Esta opción puede alterar la recuperación de notas y
+                  colecciones
                 </p>
               </div>
-              <ToggleButton v-model:checked="enableRecycleBin" />
+              <div @click="openRecyclingBinConfirmation">
+                <ToggleButton v-model:checked="enableRecycleBin" />
+              </div>
             </li>
             <li>
               <h4>Días de duración de la papelera</h4>
@@ -249,6 +251,7 @@
                     v-model="recycleBinDuration"
                   />
                   <RotateCcw
+                    @click="recycleBinDuration = previousRecycleBinDuration"
                     :size="21"
                     class="clear-input-icon"
                     role="button"
@@ -298,18 +301,23 @@ import { availableColorSets } from "../stores/useThemeSettingsStore";
 import ToggleButton from "../components/ToggleButton.vue";
 import { formatDate } from "../utils/date";
 import { debounce } from "../utils/debounce";
+import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
 import { useThemeSettingsStore } from "../stores/useThemeSettingsStore";
 import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
 import { useNoteSettingsStore } from "../stores/useNoteSettingsStore";
 import { useCollectionSettings } from "../stores/useCollectionSettings";
+import { useRecycleBinSettings } from "../stores/useRecycleBinSettings";
 import type { Theme } from "../stores/useThemeSettingsStore";
 import type { ColorSetKey } from "../stores/useThemeSettingsStore";
 import type { TemporaryNotesDuration } from "../stores/useNoteSettingsStore";
+import type { ConfirmationDialogOptions } from "../types/confirmation.options";
 
+const { confirm } = useConfirmationDialogStore();
 const themeSettings = useThemeSettingsStore();
 const permissionSettings = usePermissionSettingsStore();
 const noteSettings = useNoteSettingsStore();
 const collectionSettings = useCollectionSettings();
+const recycleBinSettings = useRecycleBinSettings();
 const themeMode = ref<Theme>("light");
 const colorSetKey = ref<ColorSetKey>("a");
 const notifyExpiredNotes = ref(false);
@@ -324,7 +332,8 @@ const enableRecycleBin = ref(true);
 const MAX_RECYCLE_BIN_DURATION = 60;
 const MIN_RECYCLE_BIN_DURATION = 1;
 const DEFAULT_RECYCLE_BIN_DURATION = 30;
-const recycleBinDuration = ref(DEFAULT_RECYCLE_BIN_DURATION); // * days
+const recycleBinDuration = ref(DEFAULT_RECYCLE_BIN_DURATION); // days
+let previousRecycleBinDuration = DEFAULT_RECYCLE_BIN_DURATION;
 const invalidRecycleBinDuration = ref(false);
 const temporaryNotesDuration = ref<TemporaryNotesDuration>({
   days: 1,
@@ -355,7 +364,28 @@ onMounted(() => {
   temporaryNotesDuration.value = noteSettings.getTemporaryNotesDuration();
   maxNotesPerCollection.value = collectionSettings.getMaxNotesPerCollection();
   previousMaxNotes = maxNotesPerCollection.value;
+  enableRecycleBin.value = recycleBinSettings.getEnableRecycleBin();
+  recycleBinDuration.value = recycleBinSettings.getRecycleBinDuration();
+  previousRecycleBinDuration = recycleBinDuration.value;
 });
+
+async function openRecyclingBinConfirmation() {
+  if (!enableRecycleBin.value) {
+    const opts: ConfirmationDialogOptions = {
+      question: "¿Quieres deshabilitar la papelera de reciclaje?",
+      description:
+        "Si lo deshabilitas las nuevas notas y colecciones no se podrán recuperar.",
+      confirmText: "Deshabilitar",
+      cancelText: "Cancelar",
+    };
+    const ok = await confirm(opts);
+    if (!ok) {
+      enableRecycleBin.value = true;
+      return;
+    }
+  }
+  recycleBinSettings.toggleEnableRecycleBin();
+}
 
 function sanitizeNumberInput(rawValue: string) {
   const regex = /[^\d/]/g;
@@ -381,19 +411,24 @@ watch(
   }),
 );
 
-watch(recycleBinDuration, (newLimit, oldLimit) => {
-  if (newLimit === oldLimit) return;
-  recycleBinDuration.value = sanitizeNumberInput(String(newLimit));
-  const parsedLimit = recycleBinDuration.value;
-  if (
-    parsedLimit < MIN_RECYCLE_BIN_DURATION ||
-    parsedLimit > MAX_RECYCLE_BIN_DURATION
-  ) {
-    invalidRecycleBinDuration.value = true;
-    return;
-  }
-  invalidRecycleBinDuration.value = false;
-});
+watch(
+  recycleBinDuration,
+  debounce((newLimit: number, oldLimit: number) => {
+    if (newLimit === oldLimit) return;
+    recycleBinDuration.value = sanitizeNumberInput(String(newLimit));
+    const parsedLimit = recycleBinDuration.value;
+    if (
+      parsedLimit < MIN_RECYCLE_BIN_DURATION ||
+      parsedLimit > MAX_RECYCLE_BIN_DURATION
+    ) {
+      invalidRecycleBinDuration.value = true;
+      return;
+    }
+    invalidRecycleBinDuration.value = false;
+    recycleBinSettings.setRecycleBinDuration(parsedLimit);
+    previousRecycleBinDuration = parsedLimit;
+  }),
+);
 
 watch(
   () => temporaryNotesDuration.value,
