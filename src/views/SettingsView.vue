@@ -104,8 +104,77 @@
           <p>Ajusta el comportamiento de sus notas.</p>
           <ul class="options-list">
             <li>
-              <h4>Duración predeterminada de notas temporales</h4>
-              <!--TODO: add duration picker-->
+              <div>
+                <h4>Duración predeterminada de notas temporales</h4>
+                <p>
+                  Las nuevas notas expirarán en:
+                  <span style="text-transform: capitalize">{{
+                    expirationDateEstimation
+                  }}</span>
+                </p>
+              </div>
+              <div id="time-picker">
+                <div>
+                  <h5>Días</h5>
+                  <button
+                    class="btn-secondary"
+                    @click="temporaryNotesDuration.days++"
+                  >
+                    <Plus :size="16" />
+                  </button>
+                  <input
+                    type="text"
+                    maxlength="2"
+                    v-model="temporaryNotesDuration.days"
+                  />
+                  <button
+                    class="btn-secondary"
+                    @click="temporaryNotesDuration.days--"
+                  >
+                    <Minus :size="16" />
+                  </button>
+                </div>
+                <div id="hour">
+                  <h5>Hora</h5>
+                  <button
+                    class="btn-secondary"
+                    @click="temporaryNotesDuration.hour++"
+                  >
+                    <Plus :size="16" />
+                  </button>
+                  <input
+                    type="text"
+                    maxlength="2"
+                    v-model="temporaryNotesDuration.hour"
+                  />
+                  <button
+                    class="btn-secondary"
+                    @click="temporaryNotesDuration.hour--"
+                  >
+                    <Minus :size="16" />
+                  </button>
+                </div>
+                <div id="minute">
+                  <h5>Minuto</h5>
+                  <button
+                    class="btn-secondary"
+                    @click="temporaryNotesDuration.minute++"
+                  >
+                    <Plus :size="16" />
+                  </button>
+                  <input
+                    type="text"
+                    maxlength="2"
+                    v-model="temporaryNotesDuration.minute"
+                  />
+                  <button
+                    class="btn-secondary"
+                    @click="temporaryNotesDuration.minute--"
+                  >
+                    <Minus :size="16" />
+                  </button>
+                </div>
+              </div>
             </li>
           </ul>
         </section>
@@ -199,7 +268,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import {
   Palette,
   Lock,
@@ -210,11 +279,14 @@ import {
   Moon,
   Trash,
   RotateCcw,
+  Plus,
+  Minus,
 } from "lucide-vue-next";
 import { availableColorSets } from "../services/colors.servic";
 import { ThemeService } from "../services/theme.servic";
 import { ColorService } from "../services/colors.servic";
 import ToggleButton from "../components/ToggleButton.vue";
+import { formatDate } from "../utils/date";
 import type { Theme } from "../services/theme.servic";
 import type { ColorSetKey } from "../services/colors.servic";
 
@@ -233,6 +305,12 @@ const MIN_RECYCLE_BIN_DURATION = 1;
 const DEFAULT_RECYCLE_BIN_DURATION = 30;
 const recycleBinDuration = ref(DEFAULT_RECYCLE_BIN_DURATION); // * days
 const invalidRecycleBinDuration = ref(false);
+const temporaryNotesDuration = ref({
+  days: 1,
+  hour: 0,
+  minute: 0,
+});
+const MAX_TEMPORARY_NOTES_DAYS = 15;
 
 function getColorSet(key: string) {
   return availableColorSets[key as keyof typeof availableColorSets];
@@ -291,6 +369,46 @@ watch(
     invalidRecycleBinDuration.value = false;
   },
 );
+
+watch(
+  () => temporaryNotesDuration.value,
+  (newDuration) => {
+    const { days, hour, minute } = newDuration;
+    temporaryNotesDuration.value.days = sanitizeNumberInput(String(days));
+    temporaryNotesDuration.value.hour = sanitizeNumberInput(String(hour));
+    temporaryNotesDuration.value.minute = sanitizeNumberInput(String(minute));
+
+    if (hour > 23) {
+      temporaryNotesDuration.value.hour = 23;
+    } else if (hour < 0) {
+      temporaryNotesDuration.value.hour = 0;
+    }
+
+    if (minute > 59) {
+      temporaryNotesDuration.value.minute = 59;
+    } else if (minute < 0) {
+      temporaryNotesDuration.value.minute = 0;
+    }
+
+    if (days > MAX_TEMPORARY_NOTES_DAYS) {
+      temporaryNotesDuration.value.days = MAX_TEMPORARY_NOTES_DAYS;
+    } else if (days < 0) {
+      temporaryNotesDuration.value.days = 0;
+    } else if (days === 0 && hour === 0 && minute === 0) {
+      temporaryNotesDuration.value.hour = 23;
+      temporaryNotesDuration.value.minute = 59;
+    }
+  },
+  { deep: true },
+);
+
+const expirationDateEstimation = computed(() => {
+  const { days, hour, minute } = temporaryNotesDuration.value;
+  const now = new Date();
+  now.setDate(now.getDate() + days);
+  now.setHours(hour, minute);
+  return formatDate(now.toISOString());
+});
 </script>
 
 <style scoped>
@@ -443,10 +561,6 @@ h2 + p {
   border-radius: var(--rounded-full);
 }
 .setting-num-input {
-  /* width: auto;
-  margin-top: auto;
-  margin-bottom: auto;
-  margin-left: auto; */
   text-align: right;
   background-color: var(--bg);
 }
@@ -502,6 +616,42 @@ h2 + p {
   transform: translateY(-50%);
   cursor: pointer;
   color: var(--primary-500);
+}
+#time-picker {
+  display: flex;
+}
+#time-picker h5 {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+#time-picker > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  border-right: 2px solid var(--border);
+  padding: 0 var(--space-4);
+}
+#time-picker input {
+  width: 100%;
+  max-width: 40px;
+  background-color: var(--bg);
+  text-align: center;
+}
+#time-picker .btn-secondary {
+  padding: var(--space-1);
+  border-radius: var(--rounded-full);
+  margin: var(--space-1) 0;
+}
+#hour,
+#minute {
+  border-right: none !important;
+}
+#hour {
+  padding-right: var(--space-2) !important;
+}
+#minute {
+  padding-left: var(--space-2) !important;
 }
 @media (min-width: 979px) {
   #settings {
