@@ -1,6 +1,7 @@
 import { NoteRepository } from "../repositories/note.repository";
 import { CollectionRepository } from "../repositories/collection.repository";
 import { useActionEventStore } from "../stores/useActionEventStore";
+import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
 import type { PaginatedResult } from "../types/paginated.result";
 import type { Note } from "../models/note";
 import type { ResultPattern } from "../types/result.pattern";
@@ -26,7 +27,10 @@ export class NoteService {
       if (!foundCollection) throw new Error("La colección no existe");
       const result = await NoteRepository.create(note);
       const { register } = useActionEventStore();
-      register("note_created");
+      const permissionSettings = usePermissionSettingsStore();
+      if (permissionSettings.getShowActivityHistory()) {
+        register("note_created");
+      }
       return ok(result);
     } catch (err) {
       console.error(err);
@@ -102,7 +106,10 @@ export class NoteService {
       collection.hasDeletedNotes = true;
       await CollectionRepository.update(collection);
       const { register } = useActionEventStore();
-      register("note_soft_deleted");
+      const permissionSettings = usePermissionSettingsStore();
+      if (permissionSettings.getShowActivityHistory()) {
+        register("note_soft_deleted");
+      }
       return ok();
     } catch (err) {
       console.error(err);
@@ -116,7 +123,10 @@ export class NoteService {
       if (!id || id <= 0) throw new Error("ID de nota inválido");
       await NoteRepository.permanentDelete(id);
       const { register } = useActionEventStore();
-      register("note_hard_deleted");
+      const permissionSettings = usePermissionSettingsStore();
+      if (permissionSettings.getShowActivityHistory()) {
+        register("note_hard_deleted");
+      }
       return ok();
     } catch (err) {
       console.error(err);

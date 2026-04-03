@@ -1,5 +1,6 @@
 import { CollectionRepository } from "../repositories/collection.repository";
 import { useActionEventStore } from "../stores/useActionEventStore";
+import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
 import type { Collection } from "../models/collection";
 import type { PaginatedResult } from "../types/paginated.result";
 import type { ResultPattern } from "../types/result.pattern";
@@ -23,7 +24,10 @@ export class CollectionService {
       }
       const result = await CollectionRepository.create(collectionName);
       const { register } = useActionEventStore();
-      register("collection_created");
+      const permissionSettings = usePermissionSettingsStore();
+      if (permissionSettings.getShowActivityHistory()) {
+        register("collection_created");
+      }
       return ok(result);
     } catch (err) {
       console.error(err);
@@ -120,7 +124,10 @@ export class CollectionService {
       if (!id || id <= 0) throw new Error("ID inválido");
       await CollectionRepository.softDelete(id);
       const { register } = useActionEventStore();
-      register("collection_soft_deleted");
+      const permissionSettings = usePermissionSettingsStore();
+      if (permissionSettings.getShowActivityHistory()) {
+        register("collection_soft_deleted");
+      }
       return ok();
     } catch (err) {
       console.error(err);
@@ -136,7 +143,10 @@ export class CollectionService {
       if (!collectionDetail) throw new Error("Collection not found");
       await CollectionRepository.permanentDelete(id);
       const { register } = useActionEventStore();
-      register("collection_hard_deleted");
+      const permissionSettings = usePermissionSettingsStore();
+      if (permissionSettings.getShowActivityHistory()) {
+        register("collection_hard_deleted");
+      }
       return ok();
     } catch (err) {
       console.error(err);

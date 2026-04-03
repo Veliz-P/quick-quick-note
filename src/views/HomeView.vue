@@ -14,7 +14,10 @@
         </button>
       </div>
     </section>
-    <section class="home-section">
+    <section
+      class="home-section"
+      v-if="permissionSettings.getShowActivityHistory()"
+    >
       <RecentActivity />
     </section>
     <section class="home-section">
@@ -42,12 +45,14 @@ import RecentActivity from "../components/RecentActivity.vue";
 import NewCollectionForm from "../components/CollectionForm.vue";
 import { useNoteFormStore } from "../stores/useNoteFormStore";
 import { useToastStore } from "../stores/useToastStore";
-const { showToast } = useToastStore();
+import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
 import type { defaultCollectionId } from "../db/idb";
 import type { FormMode } from "../types/form.mode";
 import type { NoteFormStoreOptions } from "../types/note.form.options";
 
+const { showToast } = useToastStore();
 const { openForm } = useNoteFormStore();
+const permissionSettings = usePermissionSettingsStore();
 let collection: number | defaultCollectionId = 2; // 2 is temporary collection
 const visibleNewCollectionForm = ref(false);
 
