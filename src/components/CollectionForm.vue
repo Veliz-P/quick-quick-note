@@ -35,7 +35,9 @@ import { CollectionService } from "../services/collection.servic";
 import { ref, watch, reactive, onMounted, toRaw } from "vue";
 import { debounce } from "../utils/debounce";
 import { useToastStore } from "../stores/useToastStore";
+import { useCollectionSettings } from "../stores/useCollectionSettings";
 const { showToast } = useToastStore();
+const collectionSettings = useCollectionSettings();
 import type { FormMode } from "../types/form.mode";
 import type { Collection } from "../models/collection";
 import type { ResultPattern } from "../types/result.pattern";
@@ -46,6 +48,8 @@ const collection = reactive<Collection>({
   createdAt: "",
   isDeleted: false,
   hasDeletedNotes: false,
+  maxSize: collectionSettings.getMaxNotesPerCollection(),
+  currentSize: 0,
 });
 const collectionExists = ref(false);
 
@@ -97,7 +101,11 @@ async function submitForm() {
   let msg = "";
   switch (props.formMode) {
     case "create":
-      result = await CollectionService.createCollection(collection.name);
+      const maxSize = collectionSettings.getMaxNotesPerCollection();
+      result = await CollectionService.createCollection(
+        collection.name,
+        maxSize,
+      );
       msg = "Colección creada exitosamente";
       break;
     case "edit":
@@ -128,6 +136,8 @@ function prefillForm() {
   collection.createdAt = props.collection.createdAt;
   collection.isDeleted = props.collection.isDeleted;
   collection.hasDeletedNotes = props.collection.hasDeletedNotes;
+  collection.maxSize = props.collection.maxSize;
+  collection.currentSize = props.collection.currentSize;
 }
 
 onMounted(() => {

@@ -21,12 +21,28 @@
       <h4>
         <ChevronRight /> {{ formatCollectionName(currentCollection.name) }}
       </h4>
-      <button v-if="!trash" class="btn-primary" @click="openCreateNoteForm()">
-        <FilePlusCorner /> Crear nota
-      </button>
+      <div v-if="!trash">
+        <button
+          v-if="canCreateMoreNotes"
+          class="btn-primary"
+          @click="openCreateNoteForm()"
+        >
+          <FilePlusCorner /> Crear nota
+        </button>
+        <p class="max-limit-info" v-else>
+          Colección llena ({{ currentCollection.currentSize }}/{{
+            currentCollection.maxSize
+          }})
+        </p>
+      </div>
     </div>
     <div v-if="currentCollection" class="notes-container">
-      <NoteBoard :only-deleted="trash" :collection="currentCollection?.id!" />
+      <NoteBoard
+        :only-deleted="trash"
+        :collection="currentCollection?.id!"
+        :can-create-more-notes="canCreateMoreNotes"
+        @refresh-collection="refreshCollection"
+      />
     </div>
     <div v-else class="no-current-collection-state">
       <img
@@ -39,7 +55,8 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, watch, onBeforeMount } from "vue";
+import { ref, watch, onBeforeMount, computed } from "vue";
+import { storeToRefs } from "pinia";
 import CollectionList from "../components/CollectionList.vue";
 import NoteBoard from "../components/NoteBoard.vue";
 import { FilePlusCorner, ChevronRight } from "lucide-vue-next";
@@ -47,11 +64,25 @@ import { useNoteFormStore } from "../stores/useNoteFormStore";
 import { useRoute } from "vue-router";
 import type { Collection } from "../models/collection";
 import type { NoteFormStoreOptions } from "../types/note.form.options";
+import { CollectionService } from "../services/collection.servic";
 
 const trash = ref(false);
 const currentCollection = ref<Collection | null>(null);
 const { openForm } = useNoteFormStore();
+const { shouldReload } = storeToRefs(useNoteFormStore());
 const route = useRoute();
+
+async function refreshCollection() {
+  if (!currentCollection.value) return;
+  const id = currentCollection.value.id!;
+  const refreshResult = await CollectionService.getCollection(id);
+  if (!refreshResult.success || !refreshResult.data) return;
+  currentCollection.value = refreshResult.data;
+}
+
+watch(shouldReload, async () => {
+  await refreshCollection();
+});
 
 function openCreateNoteForm() {
   const opts: NoteFormStoreOptions = {
@@ -69,6 +100,11 @@ function formatCollectionName(collectionName: string) {
   }
   return collectionName;
 }
+
+const canCreateMoreNotes = computed(() => {
+  if (!currentCollection.value) return false;
+  return currentCollection.value.currentSize < currentCollection.value.maxSize;
+});
 
 watch(
   () => route.query.trash,
@@ -130,5 +166,17 @@ h2 + p {
 }
 #no-collection-img {
   height: 220px;
+}
+.max-limit-info {
+  font-size: var(--fs-sm);
+  color: var(--info-800);
+  background-color: var(--info-200);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--rounded-md);
+  font-weight: bold;
+}
+.dark .max-limit-info {
+  background-color: var(--info-800);
+  color: var(--info-200);
 }
 </style>

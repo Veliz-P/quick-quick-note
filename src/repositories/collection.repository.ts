@@ -7,16 +7,22 @@ import type { Note } from "../models/note";
 
 export interface GetAllOptsCollections extends GetAllOpts {
   onlyWithDeletedNotes?: boolean | undefined;
+  skipFullCollections?: boolean | undefined;
 }
 
 export class CollectionRepository {
-  static async create(collectionName: string): Promise<Collection> {
+  static async create(
+    collectionName: string,
+    maxSize: number,
+  ): Promise<Collection> {
     const db = await dbPromise;
     const newCollection: Omit<Collection, "id"> = {
       name: collectionName,
       createdAt: new Date().toISOString(),
       isDeleted: false,
       hasDeletedNotes: false,
+      currentSize: 0,
+      maxSize,
     };
     const id = await db.add(stores.COLLECTIONS, newCollection);
     let parsedId = Number(id);
@@ -51,16 +57,11 @@ export class CollectionRepository {
   static async get(idOrName: number | string): Promise<Collection | null> {
     const db = await dbPromise;
     let collection: Collection | null = null;
-
     if (typeof idOrName === "string" && idOrName.trim().length >= 1) {
       collection = await db.getFromIndex(stores.COLLECTIONS, "name", idOrName);
     } else if (typeof idOrName === "number" && idOrName > 0) {
       collection = await db.get(stores.COLLECTIONS, idOrName);
     }
-
-    // if (collection?.isDeleted) {
-    //   return null;
-    // }
     return collection;
   }
 
@@ -90,6 +91,15 @@ export class CollectionRepository {
     return true;
   }
 
+  private static matchesSkipFullCollections(
+    collection: Collection,
+    skipFullCollections: boolean,
+  ) {
+    if (skipFullCollections && collection.currentSize === collection.maxSize)
+      return false;
+    return true;
+  }
+
   static async getAll(
     opts: GetAllOptsCollections,
   ): Promise<PaginatedResult<Collection>> {
@@ -101,6 +111,7 @@ export class CollectionRepository {
       exclude,
       fetchLevel,
       onlyWithDeletedNotes,
+      skipFullCollections,
     } = opts;
     pageSize = pageSize ?? 30;
     lastKey = (lastKey as string) ?? null;
@@ -108,6 +119,7 @@ export class CollectionRepository {
     fetchLevel = fetchLevel ?? "active";
     exclude = exclude ?? []; // TODO: Implement exclude id logic
     onlyWithDeletedNotes = onlyWithDeletedNotes ?? false;
+    skipFullCollections = opts.skipFullCollections ?? false;
 
     const db = await dbPromise;
     const tx = db.transaction(stores.COLLECTIONS, "readonly");
@@ -134,7 +146,16 @@ export class CollectionRepository {
           cursor.value,
           onlyWithDeletedNotes,
         );
-      if (matchesFetchLevel && matchesSearch && matchesOnlyWithDeletedNotes) {
+      const matchesSkipFullCollections = this.matchesSkipFullCollections(
+        cursor.value,
+        skipFullCollections,
+      );
+      if (
+        matchesFetchLevel &&
+        matchesSearch &&
+        matchesOnlyWithDeletedNotes &&
+        matchesSkipFullCollections
+      ) {
         collections.push(cursor.value);
       }
       cursor = await cursor.continue();

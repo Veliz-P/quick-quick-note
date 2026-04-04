@@ -56,7 +56,10 @@
                 >
                   <button><ArchiveRestore :size="20" /> Restaurar</button>
                 </li>
-                <li v-if="!onlyDeleted" @click="duplicateNote(item as Note)">
+                <li
+                  v-if="!onlyDeleted && canCreateMoreNotes"
+                  @click="duplicateNote(item as Note)"
+                >
                   <button><Copy :size="20" /> Duplicar</button>
                 </li>
                 <li @click="openCollectionSelector()">
@@ -156,11 +159,17 @@ const isCollectionSearcherVisible = ref(false);
 interface Props {
   collection?: number | defaultCollectionId;
   onlyDeleted?: boolean;
+  canCreateMoreNotes?: boolean;
 }
 const props = withDefaults(defineProps<Props>(), {
   collection: 1, // 1 is default collection
   onlyDeleted: false,
+  canCreateMoreNotes: true,
 });
+interface Emit {
+  (e: "refreshCollection"): void;
+}
+const emit = defineEmits<Emit>();
 
 async function fetchNotes() {
   const cursor = (currentCursor as [number, string]) || undefined;
@@ -299,6 +308,7 @@ async function duplicateNote(note: Note) {
   showToast("success", "Nota duplicada exitosamente");
   toggleExtraOptions();
   await refreshNotes();
+  emit("refreshCollection");
 }
 
 async function deleteNote() {
@@ -320,6 +330,7 @@ async function deleteNote() {
     console.error(error);
     showToast("error", "Ocurrió un error al borrar la nota");
   }
+  emit("refreshCollection");
 }
 
 async function restoreDeletedNote(note: Note) {
@@ -356,6 +367,7 @@ async function moveNoteTo(collection: Collection) {
   }
   showToast("success", "Nota movida exitosamente");
   await refreshNotes();
+  emit("refreshCollection");
 }
 
 const now = ref(new Date());

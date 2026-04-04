@@ -4,4 +4,6 @@ export interface Collection {
   createdAt: string;
   isDeleted: boolean;
   hasDeletedNotes: boolean;
+  currentSize: number;
+  maxSize: number;
 }

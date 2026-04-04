@@ -9,6 +9,14 @@ import type { GetAllOptsNotes } from "../repositories/note.repository";
 import { ok, error, handleErrorMsg } from "../utils/error.helpers";
 
 export class NoteService {
+  private static async updateCollectionSize(collectionId: number) {
+    if (!collectionId) return;
+    const collection = await CollectionRepository.get(collectionId);
+    if (!collection) return;
+    const collectionCount = await NoteRepository.getCount(collectionId);
+    collection.currentSize = collectionCount;
+    await CollectionRepository.update(collection);
+  }
   static async createNote(
     note: Omit<Note, "id">,
   ): Promise<ResultPattern<Note>> {
@@ -26,6 +34,7 @@ export class NoteService {
       const foundCollection = await CollectionRepository.get(collection);
       if (!foundCollection) throw new Error("La colección no existe");
       const result = await NoteRepository.create(note);
+      await this.updateCollectionSize(collection);
       const { register } = useActionEventStore();
       const permissionSettings = usePermissionSettingsStore();
       if (permissionSettings.getShowActivityHistory()) {
@@ -105,6 +114,7 @@ export class NoteService {
       if (!collection) throw new Error("Colección no encontrada");
       collection.hasDeletedNotes = true;
       await CollectionRepository.update(collection);
+      await this.updateCollectionSize(note.collectionId);
       const { register } = useActionEventStore();
       const permissionSettings = usePermissionSettingsStore();
       if (permissionSettings.getShowActivityHistory()) {
@@ -121,7 +131,10 @@ export class NoteService {
   static async deleteNote(id: number): Promise<ResultPattern<void>> {
     try {
       if (!id || id <= 0) throw new Error("ID de nota inválido");
+      const note = await NoteRepository.get(id);
+      if (!note) throw new Error("La nota no existe");
       await NoteRepository.permanentDelete(id);
+      await this.updateCollectionSize(note.collectionId);
       const { register } = useActionEventStore();
       const permissionSettings = usePermissionSettingsStore();
       if (permissionSettings.getShowActivityHistory()) {
@@ -160,6 +173,7 @@ export class NoteService {
       if (targetCollection) {
         targetCollection.hasDeletedNotes = collectionDeletedCount > 0;
         await CollectionRepository.update(targetCollection);
+        await this.updateCollectionSize(note.collectionId);
       }
       return ok();
     } catch (err) {
@@ -191,6 +205,8 @@ export class NoteService {
   static async clearExpiredNotes(): Promise<ResultPattern<void>> {
     try {
       await NoteRepository.cleanExpiredRecords();
+      const temporaryNotesCollection = 2;
+      await this.updateCollectionSize(temporaryNotesCollection);
       return ok();
     } catch (err) {
       console.error(err);
@@ -208,8 +224,11 @@ export class NoteService {
       if (!note) throw new Error("Nota no encontrada");
       const collection = await CollectionRepository.get(collectionId);
       if (!collection) throw new Error("Colección no encontrada");
+      const previousCollectionId = note.collectionId;
       note.collectionId = collectionId;
       await NoteRepository.update(note);
+      await this.updateCollectionSize(previousCollectionId);
+      await this.updateCollectionSize(collectionId);
       const { register } = useActionEventStore();
       register("note_moved");
       return ok();

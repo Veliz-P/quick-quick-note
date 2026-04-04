@@ -40,6 +40,8 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
         createdAt: new Date().toISOString(),
         isDeleted: false,
         hasDeletedNotes: false,
+        currentSize: 0,
+        maxSize: 1000,
       };
       const temporaryCollection: Collection = {
         id: 2,
@@ -47,6 +49,8 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
         createdAt: new Date().toISOString(),
         isDeleted: false,
         hasDeletedNotes: false,
+        currentSize: 0,
+        maxSize: 1000,
       };
 
       collections.add(defaultCollection);

@@ -71,7 +71,7 @@ import { debounce } from "../utils/debounce";
 import { CollectionService } from "../services/collection.servic";
 import { useToastStore } from "../stores/useToastStore";
 import type { Collection } from "../models/collection";
-import type { GetAllOpts } from "../types/get.all.opts";
+import type { GetAllOptsCollections } from "../repositories/collection.repository";
 const searchText = ref("");
 const resultList = ref<Collection[]>([]);
 const idleState = ref(true);
@@ -89,9 +89,10 @@ const selectCollection = (collection: Collection) => {
 
 async function fetchData(search: string = "") {
   // const lastKey = null; ->  TODO: USE LAST KEY WHEN TRYING TO LOAD MORE THROUGH INFINITE SCROLL
-  const fetchOpts: GetAllOpts = {
+  const fetchOpts: GetAllOptsCollections = {
     pageSize: 50,
     search,
+    skipFullCollections: true,
   };
   return await CollectionService.getCollections(fetchOpts);
 }

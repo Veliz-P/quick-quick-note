@@ -10,6 +10,7 @@ import { ok, error, handleErrorMsg } from "../utils/error.helpers";
 export class CollectionService {
   static async createCollection(
     collectionName: string,
+    maxSize: number = 1000,
   ): Promise<ResultPattern<Collection>> {
     try {
       if (
@@ -22,7 +23,7 @@ export class CollectionService {
       if (await CollectionRepository.exists(collectionName)) {
         throw new Error("Collection already exists");
       }
-      const result = await CollectionRepository.create(collectionName);
+      const result = await CollectionRepository.create(collectionName, maxSize);
       const { register } = useActionEventStore();
       const permissionSettings = usePermissionSettingsStore();
       if (permissionSettings.getShowActivityHistory()) {
