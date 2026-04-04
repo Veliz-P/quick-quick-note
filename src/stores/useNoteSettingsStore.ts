@@ -42,10 +42,20 @@ export const useNoteSettingsStore = defineStore(
       }
       noteSettings.value.temporaryNotesDuration = opts;
     }
+    function resetToDefault() {
+      noteSettings.value = {
+        temporaryNotesDuration: {
+          days: 1,
+          hour: 23,
+          minute: 59,
+        },
+      };
+    }
     return {
       noteSettings,
       getTemporaryNotesDuration,
       setTemporaryNotesDuration,
+      resetToDefault,
     };
   },
   {

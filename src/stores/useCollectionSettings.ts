@@ -8,8 +8,9 @@ interface CollectionSettings {
 export const useCollectionSettings = defineStore(
   "collectionSettings",
   () => {
+    const MAX_NOTES_PER_COLLECTION = 100;
     const collectionSettings = ref<CollectionSettings>({
-      maxNotesPerCollection: 100,
+      maxNotesPerCollection: MAX_NOTES_PER_COLLECTION,
     });
     function setMaxNotesPerCollection(value: number) {
       if (value < 1 || value > 1000) return;
@@ -18,10 +19,16 @@ export const useCollectionSettings = defineStore(
     function getMaxNotesPerCollection() {
       return collectionSettings.value.maxNotesPerCollection;
     }
+    function resetToDefault() {
+      collectionSettings.value = {
+        maxNotesPerCollection: MAX_NOTES_PER_COLLECTION,
+      };
+    }
     return {
       collectionSettings,
       setMaxNotesPerCollection,
       getMaxNotesPerCollection,
+      resetToDefault,
     };
   },
   {

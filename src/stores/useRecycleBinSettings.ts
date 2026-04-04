@@ -27,12 +27,19 @@ export const useRecycleBinSettings = defineStore(
     function getRecycleBinDuration() {
       return recycleBinSettings.value.recycleBinDuration;
     }
+    function resetToDefault() {
+      recycleBinSettings.value = {
+        enableRecycleBin: true,
+        recycleBinDuration: 30,
+      };
+    }
     return {
       recycleBinSettings,
       toggleEnableRecycleBin,
       getEnableRecycleBin,
       setRecycleBinDuration,
       getRecycleBinDuration,
+      resetToDefault,
     };
   },
   {

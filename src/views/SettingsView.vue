@@ -273,7 +273,9 @@
             de su cuenta.
           </p>
           <div class="danger-options">
-            <button class="btn-danger">Restablecer configuraciones</button>
+            <button @click="resetAllToDefault" class="btn-danger">
+              Restablecer configuraciones
+            </button>
             <button class="btn-danger">Borrar datos</button>
           </div>
         </section>
@@ -356,7 +358,7 @@ function setColorSet(key: ColorSetKey) {
   themeSettings.setColorSetKey(key);
 }
 
-onMounted(() => {
+function loadSettings() {
   themeMode.value = themeSettings.getTheme();
   colorSetKey.value = themeSettings.getColorSetKey();
   notifyExpiredNotes.value = permissionSettings.getNotifyExpiredNotes();
@@ -367,6 +369,28 @@ onMounted(() => {
   enableRecycleBin.value = recycleBinSettings.getEnableRecycleBin();
   recycleBinDuration.value = recycleBinSettings.getRecycleBinDuration();
   previousRecycleBinDuration = recycleBinDuration.value;
+}
+
+async function resetAllToDefault() {
+  const opts: ConfirmationDialogOptions = {
+    question:
+      "¿Está seguro de restablecer todas las configuraciones a sus valores por defecto?",
+    description: "Se eliminarán todas sus preferencias actuales.",
+    confirmText: "Sí, restablecer",
+    cancelText: "No, cancelar",
+  };
+  const ok = await confirm(opts);
+  if (!ok) return;
+  themeSettings.resetToDefault();
+  permissionSettings.resetToDefault();
+  noteSettings.resetToDefault();
+  collectionSettings.resetToDefault();
+  recycleBinSettings.resetToDefault();
+  loadSettings();
+}
+
+onMounted(() => {
+  loadSettings();
 });
 
 async function openRecyclingBinConfirmation() {
@@ -375,8 +399,8 @@ async function openRecyclingBinConfirmation() {
       question: "¿Quieres deshabilitar la papelera de reciclaje?",
       description:
         "Si lo deshabilitas las nuevas notas y colecciones no se podrán recuperar.",
-      confirmText: "Deshabilitar",
-      cancelText: "Cancelar",
+      confirmText: "Sí, deshabilitar",
+      cancelText: "No, cancelar",
     };
     const ok = await confirm(opts);
     if (!ok) {

@@ -24,12 +24,19 @@ export const usePermissionSettingsStore = defineStore(
     function getShowActivityHistory(): boolean {
       return permissionSettings.value.showActivityHistory;
     }
+    function resetToDefault() {
+      permissionSettings.value = {
+        notifyExpiredNotes: true,
+        showActivityHistory: true,
+      };
+    }
     return {
       permissionSettings,
       setNotifyExpiredNotes,
       setShowActivityHistory,
       getNotifyExpiredNotes,
       getShowActivityHistory,
+      resetToDefault,
     };
   },
   {

@@ -60,6 +60,14 @@ export const useThemeSettingsStore = defineStore(
         availableColorSets.a[0]
       );
     }
+    function resetToDefault() {
+      themeSettings.value = {
+        theme: "light",
+        themeChanged: false,
+        colorSetKey: "a",
+      };
+      loadThemeConfig();
+    }
     return {
       themeSettings,
       setTheme,
@@ -69,6 +77,7 @@ export const useThemeSettingsStore = defineStore(
       loadThemeConfig,
       getColorSet,
       getRandomColor,
+      resetToDefault,
     };
   },
   {
