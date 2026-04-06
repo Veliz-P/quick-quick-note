@@ -49,8 +49,9 @@ export const useActionEventStore = defineStore(
       applyLimit();
     }
     const getActions = (): ActionEvent[] => actions.value;
+    const clearActions = () => (actions.value = []);
 
-    return { actions, register, getActions };
+    return { actions, register, getActions, clearActions };
   },
   {
     persist: {

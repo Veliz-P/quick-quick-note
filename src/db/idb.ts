@@ -1,7 +1,7 @@
 import { openDB } from "idb";
 import type { Collection } from "../models/collection";
 
-const DB_NAME = "notes-db";
+export const DB_NAME = "notes-db";
 const DB_VERSION = 3;
 
 export type defaultCollectionId = 1 | 2;

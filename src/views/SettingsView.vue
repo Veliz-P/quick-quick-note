@@ -276,7 +276,9 @@
             <button @click="resetAllToDefault" class="btn-danger">
               Restablecer configuraciones
             </button>
-            <button class="btn-danger">Borrar datos</button>
+            <button @click="resetAllData" class="btn-danger">
+              Borrar datos
+            </button>
           </div>
         </section>
       </section>
@@ -309,6 +311,9 @@ import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
 import { useNoteSettingsStore } from "../stores/useNoteSettingsStore";
 import { useCollectionSettings } from "../stores/useCollectionSettings";
 import { useRecycleBinSettings } from "../stores/useRecycleBinSettings";
+import { SystemService } from "../services/system.servic";
+import { useActionEventStore } from "../stores/useActionEventStore";
+import { useToastStore } from "../stores/useToastStore";
 import type { Theme } from "../stores/useThemeSettingsStore";
 import type { ColorSetKey } from "../stores/useThemeSettingsStore";
 import type { TemporaryNotesDuration } from "../stores/useNoteSettingsStore";
@@ -320,6 +325,8 @@ const permissionSettings = usePermissionSettingsStore();
 const noteSettings = useNoteSettingsStore();
 const collectionSettings = useCollectionSettings();
 const recycleBinSettings = useRecycleBinSettings();
+const actionEventStore = useActionEventStore();
+const { showToast } = useToastStore();
 const themeMode = ref<Theme>("light");
 const colorSetKey = ref<ColorSetKey>("a");
 const notifyExpiredNotes = ref(false);
@@ -389,10 +396,6 @@ async function resetAllToDefault() {
   loadSettings();
 }
 
-onMounted(() => {
-  loadSettings();
-});
-
 async function openRecyclingBinConfirmation() {
   if (!enableRecycleBin.value) {
     const opts: ConfirmationDialogOptions = {
@@ -409,6 +412,30 @@ async function openRecyclingBinConfirmation() {
     }
   }
   recycleBinSettings.toggleEnableRecycleBin();
+}
+
+async function resetAllData() {
+  const opts: ConfirmationDialogOptions = {
+    question: "¿Quieres borrar todos tus datos permanentemente?",
+    description: "Esta opción no se puede deshacer.",
+    confirmText: "Sí, eliminar",
+    cancelText: "No, cancelar",
+  };
+  const ok = await confirm(opts);
+  if (!ok) {
+    enableRecycleBin.value = true;
+    return;
+  }
+  const result = await SystemService.clearData();
+  if (!result.success) {
+    showToast("error", result.error);
+    return;
+  }
+  showToast("success", "Datos eliminados, reiniciando la app...");
+  actionEventStore.clearActions();
+  setTimeout(() => {
+    window.location.reload();
+  }, 1500);
 }
 
 function sanitizeNumberInput(rawValue: string) {
@@ -493,6 +520,10 @@ const expirationDateEstimation = computed(() => {
   now.setDate(now.getDate() + days);
   now.setHours(hour, minute);
   return formatDate(now.toISOString());
+});
+
+onMounted(() => {
+  loadSettings();
 });
 </script>
 
