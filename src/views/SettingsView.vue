@@ -417,7 +417,8 @@ async function openRecyclingBinConfirmation() {
 async function resetAllData() {
   const opts: ConfirmationDialogOptions = {
     question: "¿Quieres borrar todos tus datos permanentemente?",
-    description: "Esta opción no se puede deshacer.",
+    description:
+      "Antes de continuar, asegúrese de cerrar las demás pestañas abiertas de la app.",
     confirmText: "Sí, eliminar",
     cancelText: "No, cancelar",
   };
