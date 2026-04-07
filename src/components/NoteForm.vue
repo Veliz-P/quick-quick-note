@@ -88,14 +88,11 @@ import { reactive, ref, onMounted, watch, type Ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useThemeSettingsStore } from "../stores/useThemeSettingsStore";
 const themeSettings = useThemeSettingsStore();
-import { ExpirationNoteService } from "../services/expiration.note.servic";
 import { NoteService } from "../services/notes.servic";
 import { buildDate, getOnlyDate, formatHour } from "../utils/date";
 import { useToastStore } from "../stores/useToastStore";
 import { useNoteFormStore } from "../stores/useNoteFormStore";
-const { showToast } = useToastStore();
-const { options } = storeToRefs(useNoteFormStore());
-const { closeForm } = useNoteFormStore();
+import { useNoteSettingsStore } from "../stores/useNoteSettingsStore";
 import {
   Paperclip,
   Save,
@@ -108,6 +105,10 @@ import {
 import type { FormMode } from "../types/form.mode";
 import type { Note } from "../models/note";
 import type { ResultPattern } from "../types/result.pattern";
+const { showToast } = useToastStore();
+const { options } = storeToRefs(useNoteFormStore());
+const { closeForm } = useNoteFormStore();
+const noteSettings = useNoteSettingsStore();
 
 const note: Note = reactive({
   id: null,
@@ -175,7 +176,12 @@ watch(
 function generateExpirationDate(): string {
   let date: Date | null = null;
   if (!expirationDate.value && !expirationTime.value) {
-    date = ExpirationNoteService.getDefaultExpiration();
+    const now = new Date();
+    const savedDuration = noteSettings.getTemporaryNotesDuration();
+    now.setDate(now.getDate() + savedDuration.days);
+    now.setHours(savedDuration.hour);
+    now.setMinutes(savedDuration.minute);
+    date = now;
   } else {
     date = buildDate(expirationDate.value, expirationTime.value);
   }

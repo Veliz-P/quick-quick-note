@@ -114,13 +114,14 @@
               <div>
                 <h4>Duración predeterminada de notas temporales</h4>
                 <p>
-                  Las nuevas notas expirarán en:
+                  Las nuevas notas expirarán durante
                   <span style="text-transform: capitalize">
                     {{ expirationDateEstimation }}
                   </span>
                   a las
-                  {{ temporaryNotesDuration.hour }}:
-                  {{ temporaryNotesDuration.minute }}
+                  {{ temporaryNotesDuration.hour }}:{{
+                    temporaryNotesDuration.minute
+                  }}
                   {{ temporaryNotesDuration.hour > 11 ? "PM" : "AM" }}
                 </p>
               </div>
