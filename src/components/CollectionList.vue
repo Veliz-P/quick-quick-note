@@ -131,7 +131,9 @@ const permanentDeleteOpts: ConfirmationDialogOptions = {
 const currentCollection = defineModel<Collection | null>("currentCollection", {
   default: null,
 });
-
+const collectionsLength = defineModel<number>("collectionsLength", {
+  default: 0,
+});
 const collections = ref<Collection[]>([]);
 let currentCursor: string | null = null;
 const hasMore = ref(false);
@@ -170,7 +172,13 @@ async function restoreDeletedCollection(collection: Collection) {
   }
   showToast("success", "Colección restaurada");
   collection.isDeleted = false;
-  updateCollectionNode(collection);
+  if (!collection.isDeleted && collection.hasDeletedNotes) {
+    updateCollectionNode(collection);
+  } else {
+    removeCollectionNode();
+  }
+  currentCollection.value = null;
+  collectionsLength.value = collections.value.length;
 }
 
 function toggleExtraOptions(collection?: Collection) {
@@ -221,7 +229,7 @@ async function fetchCollections() {
   const fetchOpts: GetAllOptsCollections = {
     lastKey: prevCursor,
     fetchLevel: props.trash ? "all" : "active",
-    onlyWithDeletedNotes: props.trash,
+    checkDeletedProperties: props.trash,
   };
   const fetchResult = await CollectionService.getCollections(fetchOpts);
   if (!fetchResult.success) {
@@ -233,6 +241,7 @@ async function fetchCollections() {
   currentCursor = page.lastKey as string;
   hasMore.value = page.hasMore;
   collections.value.push(...page.data);
+  collectionsLength.value = collections.value.length;
   isLoading.value = false;
 }
 

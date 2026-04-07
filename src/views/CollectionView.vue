@@ -12,6 +12,7 @@
       <CollectionList
         :trash="trash"
         v-model:current-collection="currentCollection"
+        v-model:collections-length="collectionsLength"
       />
     </div>
     <div
@@ -44,13 +45,27 @@
         @refresh-collection="refreshCollection"
       />
     </div>
-    <div v-else class="no-current-collection-state">
+    <div
+      v-if="collectionsLength > 0 && !currentCollection"
+      class="no-current-collection-state"
+    >
       <img
         id="no-collection-img"
         src="../assets/svg/no-collection-selected-icon.svg"
         alt="no collection selected"
       />
       <p>Seleccione cualquier colección de la lista para ver sus notas.</p>
+    </div>
+    <div
+      v-if="collectionsLength === 0 && !currentCollection && trash"
+      class="no-current-collection-state"
+    >
+      <img
+        id="no-trash-img"
+        src="../assets/svg/no-trash.svg"
+        alt="no collection selected"
+      />
+      <p>Vaya, parece que la papelera de reciclaje está limpia.</p>
     </div>
   </div>
 </template>
@@ -68,6 +83,7 @@ import { CollectionService } from "../services/collection.servic";
 
 const trash = ref(false);
 const currentCollection = ref<Collection | null>(null);
+const collectionsLength = ref(0);
 const { openForm } = useNoteFormStore();
 const { shouldReload } = storeToRefs(useNoteFormStore());
 const route = useRoute();
@@ -115,6 +131,10 @@ watch(
 );
 onBeforeMount(() => {
   trash.value = route.query.trash === "true" ? true : false;
+
+  console.log(trash.value);
+  console.log(currentCollection.value);
+  console.log(collectionsLength.value);
 });
 </script>
 
@@ -164,7 +184,8 @@ h2 + p {
   color: var(--text-muted);
   text-align: center;
 }
-#no-collection-img {
+#no-collection-img,
+#no-trash-img {
   height: 220px;
 }
 .max-limit-info {

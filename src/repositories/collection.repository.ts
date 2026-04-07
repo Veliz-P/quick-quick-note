@@ -6,8 +6,8 @@ import type { GetAllOpts, FetchLevel } from "../types/get.all.opts";
 import type { Note } from "../models/note";
 
 export interface GetAllOptsCollections extends GetAllOpts {
-  onlyWithDeletedNotes?: boolean | undefined;
   skipFullCollections?: boolean | undefined;
+  checkDeletedProperties?: boolean | undefined;
 }
 
 export class CollectionRepository {
@@ -83,12 +83,17 @@ export class CollectionRepository {
     return false;
   }
 
-  private static async matchesOnlyWithDeletedNotes(
+  private static matchesCheckDeletedProperties(
     collection: Collection,
-    onlyWithDeletedNotes: boolean,
+    checkDeletedProperties: boolean,
   ) {
-    if (onlyWithDeletedNotes && !collection.hasDeletedNotes) return false;
-    return true;
+    if (!checkDeletedProperties) return true;
+    if (
+      checkDeletedProperties &&
+      (collection.hasDeletedNotes || collection.isDeleted)
+    )
+      return true;
+    return false;
   }
 
   private static matchesSkipFullCollections(
@@ -110,16 +115,16 @@ export class CollectionRepository {
       search,
       exclude,
       fetchLevel,
-      onlyWithDeletedNotes,
       skipFullCollections,
+      checkDeletedProperties,
     } = opts;
     pageSize = pageSize ?? 30;
     lastKey = (lastKey as string) ?? null;
     search = search ?? "";
     fetchLevel = fetchLevel ?? "active";
     exclude = exclude ?? []; // TODO: Implement exclude id logic
-    onlyWithDeletedNotes = onlyWithDeletedNotes ?? false;
     skipFullCollections = opts.skipFullCollections ?? false;
+    checkDeletedProperties = opts.checkDeletedProperties ?? false;
 
     const db = await dbPromise;
     const tx = db.transaction(stores.COLLECTIONS, "readonly");
@@ -141,11 +146,10 @@ export class CollectionRepository {
         cursor.value,
         fetchLevel,
       );
-      const matchesOnlyWithDeletedNotes =
-        await this.matchesOnlyWithDeletedNotes(
-          cursor.value,
-          onlyWithDeletedNotes,
-        );
+      const matchesCheckDeletedProperties = this.matchesCheckDeletedProperties(
+        cursor.value,
+        checkDeletedProperties,
+      );
       const matchesSkipFullCollections = this.matchesSkipFullCollections(
         cursor.value,
         skipFullCollections,
@@ -153,7 +157,7 @@ export class CollectionRepository {
       if (
         matchesFetchLevel &&
         matchesSearch &&
-        matchesOnlyWithDeletedNotes &&
+        matchesCheckDeletedProperties &&
         matchesSkipFullCollections
       ) {
         collections.push(cursor.value);
