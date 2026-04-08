@@ -8,6 +8,7 @@
           type="text"
           placeholder="Buscar colecciones..."
           maxlength="50"
+          @input="searchText = sanitizeSearch(searchText)"
         />
         <Search class="search-icon form-icon" :size="20" :stroke-width="2.5" />
         <button
@@ -24,13 +25,13 @@
       <ul v-if="resultList.length > 0">
         <li
           v-for="collection in resultList"
-          :index="collection.id"
+          :key="collection.id!"
           @click="selectCollection(collection)"
         >
           <div class="folder-icon">
             <FolderInput :size="18" />
           </div>
-          <div v-html="buildEmphasizedHtml(collection.name, searchText)"></div>
+          <div>{{ collection.name }}</div>
           <button class="pick-option-btn btn-primary">
             <ArrowUpRight :size="18" />
           </button>
@@ -97,10 +98,15 @@ async function fetchData(search: string = "") {
   return await CollectionService.getCollections(fetchOpts);
 }
 
+function sanitizeSearch(rawSearch: string) {
+  const regex = /[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑ_]/g;
+  return rawSearch.replace(regex, "");
+}
+
 watch(
   () => searchText.value,
   debounce(async (newSearch: string) => {
-    if (!newSearch.trim()) {
+    if (!newSearch) {
       resultList.value = [];
       idleState.value = true;
     }
@@ -115,22 +121,8 @@ watch(
       resultList.value = collections;
       idleState.value = false;
     }
-    console.log(resultList.value);
   }, 500),
 );
-
-function buildEmphasizedHtml(originalText: string, emphasizeText: string) {
-  const strongStyle = `
-  font-weight: bold;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  text-decoration-thickness: 2px;
-  `;
-  originalText = originalText.toLowerCase();
-  emphasizeText = emphasizeText.toLowerCase();
-  const strongHtml = `<strong style="${strongStyle}">${emphasizeText}</strong>`;
-  return `<p style='text-transform: capitalize'>${originalText.replace(emphasizeText, strongHtml)}</p>`;
-}
 </script>
 
 <style scoped>
