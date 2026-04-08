@@ -3,12 +3,15 @@ import type { Collection } from "../models/collection";
 
 export const DB_NAME = "notes-db";
 const DB_VERSION = 3;
-
-export type defaultCollectionId = 1 | 2;
-
 export const stores = {
   NOTES: "notes",
   COLLECTIONS: "collections",
+} as const;
+const DEFAULT_COLLECTION_ID = 1;
+const TEMPORARY_COLLECTION_ID = 2;
+export const defaultCollectionsIds = {
+  DEFAULT_NOTES: DEFAULT_COLLECTION_ID,
+  TEMPORARY_NOTES: TEMPORARY_COLLECTION_ID,
 } as const;
 
 export const dbPromise = openDB(DB_NAME, DB_VERSION, {
@@ -35,7 +38,7 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
       collections.createIndex("byDeletedId", ["isDeleted", "id"]);
 
       const defaultCollection: Collection = {
-        id: 1,
+        id: DEFAULT_COLLECTION_ID,
         name: "default",
         createdAt: new Date().toISOString(),
         isDeleted: false,
@@ -44,7 +47,7 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
         maxSize: 1000,
       };
       const temporaryCollection: Collection = {
-        id: 2,
+        id: TEMPORARY_COLLECTION_ID,
         name: "temporary",
         createdAt: new Date().toISOString(),
         isDeleted: false,
@@ -52,7 +55,6 @@ export const dbPromise = openDB(DB_NAME, DB_VERSION, {
         currentSize: 0,
         maxSize: 1000,
       };
-
       collections.add(defaultCollection);
       collections.add(temporaryCollection);
     }

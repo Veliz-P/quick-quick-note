@@ -1,6 +1,7 @@
 import type { Note } from "../models/note";
 import { dbPromise } from "../db/idb";
 import { stores } from "../db/idb";
+import { defaultCollectionsIds } from "../db/idb";
 import type { PaginatedResult } from "../types/paginated.result";
 import type { GetAllOpts } from "../types/get.all.opts";
 
@@ -37,7 +38,7 @@ export class NoteRepository {
   static async getAll(opts: GetAllOptsNotes): Promise<PaginatedResult<Note>> {
     if (!opts) throw new Error("Opciones inválidas");
     let { collection, pageSize, lastKey, onlyDeleted, exclude } = opts;
-    collection = collection ?? 1; // 1 is default collection
+    collection = collection ?? defaultCollectionsIds.DEFAULT_NOTES;
     pageSize = pageSize ?? 30;
     lastKey = (lastKey as [number, string]) ?? null;
     onlyDeleted = onlyDeleted ?? false;
@@ -132,10 +133,9 @@ export class NoteRepository {
     const store = tx.objectStore(stores.NOTES);
     const idx = store.index("byCollectionId");
     const now = new Date();
-    const temporaryNotesCollection = 2;
     const range = IDBKeyRange.bound(
-      [temporaryNotesCollection, 0],
-      [temporaryNotesCollection, Infinity],
+      [defaultCollectionsIds.TEMPORARY_NOTES, 0],
+      [defaultCollectionsIds.TEMPORARY_NOTES, Infinity],
     );
 
     let cursor = await idx.openCursor(range);

@@ -46,14 +46,14 @@ import NewCollectionForm from "../components/CollectionForm.vue";
 import { useNoteFormStore } from "../stores/useNoteFormStore";
 import { useToastStore } from "../stores/useToastStore";
 import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
-import type { defaultCollectionId } from "../db/idb";
+import { defaultCollectionsIds } from "../db/idb";
 import type { FormMode } from "../types/form.mode";
 import type { NoteFormStoreOptions } from "../types/note.form.options";
 
 const { showToast } = useToastStore();
 const { openForm } = useNoteFormStore();
 const permissionSettings = usePermissionSettingsStore();
-let collection: number | defaultCollectionId = 2; // 2 is temporary collection
+let collection: number = defaultCollectionsIds.TEMPORARY_NOTES;
 const visibleNewCollectionForm = ref(false);
 
 function openNoteForm(

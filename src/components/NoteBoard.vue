@@ -126,12 +126,12 @@ import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore
 import { useNoteFormStore } from "../stores/useNoteFormStore";
 import { useActionEventStore } from "../stores/useActionEventStore";
 import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
+import { defaultCollectionsIds } from "../db/idb";
 import Grid from "vue-virtual-scroll-grid";
 import CollectionSearcher from "./CollectionSearcher.vue";
 import type { PaginatedResult } from "../types/paginated.result";
 import type { Note } from "../models/note";
 import type { ConfirmationDialogOptions } from "../types/confirmation.options";
-import type { defaultCollectionId } from "../db/idb";
 import type { NoteFormStoreOptions } from "../types/note.form.options";
 import type { Collection } from "../models/collection";
 import type { GetAllOptsNotes } from "../repositories/note.repository";
@@ -163,12 +163,12 @@ const shouldRenderGrid = ref(true);
 const isCollectionSearcherVisible = ref(false);
 
 interface Props {
-  collection?: number | defaultCollectionId;
+  collection?: number;
   onlyDeleted?: boolean;
   canCreateMoreNotes?: boolean;
 }
 const props = withDefaults(defineProps<Props>(), {
-  collection: 1, // 1 is default collection
+  collection: defaultCollectionsIds.DEFAULT_NOTES,
   onlyDeleted: false,
   canCreateMoreNotes: true,
 });
@@ -296,7 +296,7 @@ function openNoteForm(note: Note) {
   let formatedNote = { ...note } as NoteCard;
   delete formatedNote.color;
   const opts: NoteFormStoreOptions = {
-    isTemporary: props.collection === 2, // 2 is temporary collection
+    isTemporary: props.collection === defaultCollectionsIds.TEMPORARY_NOTES,
     note: formatedNote,
     collectionId: props.collection,
     formMode: "edit",

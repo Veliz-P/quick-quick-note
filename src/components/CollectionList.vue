@@ -33,7 +33,7 @@
       <button
         class="btn-secondary collection-actions-btn"
         @click.stop="toggleExtraOptions(collection)"
-        v-if="collection.id! !== 1 && collection.id! !== 2"
+        v-if="!isDefaultCollection(collection.id!)"
       >
         <Ellipsis :size="20" />
       </button>
@@ -89,8 +89,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue";
-import type { Collection } from "../models/collection";
-import type { PaginatedResult } from "../types/paginated.result";
 import NewCollectionForm from "./CollectionForm.vue";
 import { CollectionService } from "../services/collection.servic";
 import { formatDate } from "../utils/date";
@@ -104,18 +102,29 @@ import {
   ArchiveRestore,
 } from "lucide-vue-next";
 import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
-const { confirm } = useConfirmationDialogStore();
-import type { ConfirmationDialogOptions } from "../types/confirmation.options";
 import { useToastStore } from "../stores/useToastStore";
 import { useActionEventStore } from "../stores/useActionEventStore";
 import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
+import { defaultCollectionsIds } from "../db/idb";
 import type { FormMode } from "../types/form.mode";
 import type { ResultPattern } from "../types/result.pattern";
 import type { GetAllOptsCollections } from "../repositories/collection.repository";
 import type { ActionEventType } from "../types/action.event";
+import type { Collection } from "../models/collection";
+import type { PaginatedResult } from "../types/paginated.result";
+import type { ConfirmationDialogOptions } from "../types/confirmation.options";
 const { showToast } = useToastStore();
 const { register } = useActionEventStore();
 const permissionSettings = usePermissionSettingsStore();
+const { confirm } = useConfirmationDialogStore();
+
+function isDefaultCollection(collectionId: number) {
+  return (
+    collectionId === defaultCollectionsIds.DEFAULT_NOTES ||
+    collectionId === defaultCollectionsIds.TEMPORARY_NOTES
+  );
+}
+
 interface Props {
   trash?: boolean;
 }

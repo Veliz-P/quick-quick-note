@@ -1,5 +1,6 @@
 import { NoteRepository } from "../repositories/note.repository";
 import { CollectionRepository } from "../repositories/collection.repository";
+import { defaultCollectionsIds } from "../db/idb";
 import type { PaginatedResult } from "../types/paginated.result";
 import type { Note } from "../models/note";
 import type { ResultPattern } from "../types/result.pattern";
@@ -81,7 +82,7 @@ export class NoteService {
     try {
       if (!opts) throw new Error("Opciones inválidas");
       let { collection } = opts;
-      collection = collection ?? 1; // 1 is default collection
+      collection = collection ?? defaultCollectionsIds.DEFAULT_NOTES;
       if (collection && collection <= 0)
         throw new Error("ID de colección inválido");
       if (collection) {
@@ -137,13 +138,16 @@ export class NoteService {
       if (!note) throw new Error("La nota no existe");
       const collection = await CollectionRepository.get(note.collectionId);
       if (!collection) {
-        note.collectionId = 1;
+        note.collectionId = defaultCollectionsIds.DEFAULT_NOTES;
       }
-      if (note.collectionId === 2 && note.expiresAt) {
+      if (
+        note.collectionId === defaultCollectionsIds.TEMPORARY_NOTES &&
+        note.expiresAt
+      ) {
         const now = new Date();
         const expiration = new Date(note.expiresAt);
         if (expiration < now) {
-          note.collectionId = 1;
+          note.collectionId = defaultCollectionsIds.DEFAULT_NOTES;
         }
       }
       await NoteRepository.restore(note);
@@ -187,8 +191,7 @@ export class NoteService {
   static async clearExpiredNotes(): Promise<ResultPattern<void>> {
     try {
       await NoteRepository.cleanExpiredRecords();
-      const temporaryNotesCollection = 2;
-      await this.updateCollectionSize(temporaryNotesCollection);
+      await this.updateCollectionSize(defaultCollectionsIds.TEMPORARY_NOTES);
       return ok();
     } catch (err) {
       console.error(err);
@@ -208,12 +211,12 @@ export class NoteService {
       if (!collection) throw new Error("Colección no encontrada");
       const previousCollectionId = note.collectionId;
       // When moving a note from the temporary notes collection to another collection
-      if (note.collectionId === 2) {
+      if (note.collectionId === defaultCollectionsIds.TEMPORARY_NOTES) {
         note.expiresAt = undefined;
       }
       // When moving a note from another collection to the temporary notes collection
       // By default the note will expire the next day
-      if (collectionId === 2) {
+      if (collectionId === defaultCollectionsIds.TEMPORARY_NOTES) {
         const now = new Date();
         now.setDate(now.getDate() + 1);
         now.setHours(23, 59, 59);
@@ -225,7 +228,6 @@ export class NoteService {
       await this.updateCollectionSize(collectionId);
       return ok();
     } catch (err) {
-      console.error(err);
       const message = handleErrorMsg(
         err,
         "Error al mover la nota a la colección",

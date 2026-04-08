@@ -82,6 +82,7 @@ import type { NoteFormStoreOptions } from "../types/note.form.options";
 import { CollectionService } from "../services/collection.servic";
 import { NoteService } from "../services/notes.servic";
 import { useToastStore } from "../stores/useToastStore";
+import { defaultCollectionsIds } from "../db/idb";
 
 const trash = ref(false);
 const currentCollection = ref<Collection | null>(null);
@@ -105,7 +106,8 @@ watch(shouldReload, async () => {
 
 function openCreateNoteForm() {
   const opts: NoteFormStoreOptions = {
-    isTemporary: currentCollection.value?.id === 2,
+    isTemporary:
+      currentCollection.value?.id === defaultCollectionsIds.TEMPORARY_NOTES,
     note: null,
     collectionId: currentCollection.value?.id!,
     formMode: "create",
