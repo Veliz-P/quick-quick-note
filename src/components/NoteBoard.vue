@@ -124,6 +124,8 @@ import {
 import { useToastStore } from "../stores/useToastStore";
 import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
 import { useNoteFormStore } from "../stores/useNoteFormStore";
+import { useActionEventStore } from "../stores/useActionEventStore";
+import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
 import Grid from "vue-virtual-scroll-grid";
 import CollectionSearcher from "./CollectionSearcher.vue";
 import type { PaginatedResult } from "../types/paginated.result";
@@ -133,11 +135,15 @@ import type { defaultCollectionId } from "../db/idb";
 import type { NoteFormStoreOptions } from "../types/note.form.options";
 import type { Collection } from "../models/collection";
 import type { GetAllOptsNotes } from "../repositories/note.repository";
+import type { ResultPattern } from "../types/result.pattern";
+import type { ActionEventType } from "../types/action.event";
 
 const { showToast } = useToastStore();
 const { confirm } = useConfirmationDialogStore();
 const { shouldReload } = storeToRefs(useNoteFormStore());
 const { openForm } = useNoteFormStore();
+const { register } = useActionEventStore();
+const permissionSettings = usePermissionSettingsStore();
 
 const permanentDeleteOpts: ConfirmationDialogOptions = {
   question: "¿Estás seguro de que quieres borrar esta nota?",
@@ -305,6 +311,9 @@ async function duplicateNote(note: Note) {
     showToast("error", result.error);
     return;
   }
+  if (permissionSettings.getShowActivityHistory()) {
+    register("note_created");
+  }
   showToast("success", "Nota duplicada exitosamente");
   toggleExtraOptions();
   await refreshNotes();
@@ -312,24 +321,32 @@ async function duplicateNote(note: Note) {
 }
 
 async function deleteNote() {
-  try {
-    const deleteNoteId = activeId.value;
-    if (!deleteNoteId) throw new Error("No note selected for deletion");
-    if (!deletePermanently.value) {
-      await NoteService.softDeleteNote(deleteNoteId);
-      showToast("success", "Nota movida a papelera");
-    } else {
-      const ok = await confirm(permanentDeleteOpts);
-      if (!ok) return;
-      await NoteService.deleteNote(deleteNoteId);
-      showToast("success", "Nota borrada permanentemente");
-    }
-    toggleExtraOptions();
-    await refreshNotes();
-  } catch (error) {
-    console.error(error);
-    showToast("error", "Ocurrió un error al borrar la nota");
+  const deleteNoteId = activeId.value;
+  if (!deleteNoteId) return;
+  let result: ResultPattern<void> | null = null;
+  let msg = "";
+  if (!deletePermanently.value) {
+    result = await NoteService.softDeleteNote(deleteNoteId);
+    msg = "Nota movida a papelera";
+  } else {
+    const ok = await confirm(permanentDeleteOpts);
+    if (!ok) return;
+    result = await NoteService.deleteNote(deleteNoteId);
+    msg = "Nota borrada permanentemente";
   }
+  if (!result.success) {
+    showToast("error", result.error);
+    return;
+  }
+  if (permissionSettings.getShowActivityHistory()) {
+    const actionEventType: ActionEventType = deletePermanently.value
+      ? "note_hard_deleted"
+      : "note_soft_deleted";
+    register(actionEventType);
+  }
+  showToast("success", msg);
+  toggleExtraOptions();
+  await refreshNotes();
   emit("refreshCollection");
 }
 
@@ -364,6 +381,9 @@ async function moveNoteTo(collection: Collection) {
   if (!result.success) {
     showToast("error", result.error);
     return;
+  }
+  if (permissionSettings.getShowActivityHistory()) {
+    register("note_moved");
   }
   showToast("success", "Nota movida exitosamente");
   await refreshNotes();

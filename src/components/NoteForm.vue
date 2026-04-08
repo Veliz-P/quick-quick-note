@@ -93,6 +93,8 @@ import { buildDate, getOnlyDate, formatHour } from "../utils/date";
 import { useToastStore } from "../stores/useToastStore";
 import { useNoteFormStore } from "../stores/useNoteFormStore";
 import { useNoteSettingsStore } from "../stores/useNoteSettingsStore";
+import { useActionEventStore } from "../stores/useActionEventStore";
+import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
 import {
   Paperclip,
   Save,
@@ -109,6 +111,8 @@ const { showToast } = useToastStore();
 const { options } = storeToRefs(useNoteFormStore());
 const { closeForm } = useNoteFormStore();
 const noteSettings = useNoteSettingsStore();
+const { register } = useActionEventStore();
+const permissionSettings = usePermissionSettingsStore();
 
 const note: Note = reactive({
   id: null,
@@ -211,14 +215,16 @@ async function submitForm() {
     showToast("error", result.error);
     return;
   }
-  const resultNote = result.data as Note;
   const message =
     formMode.value === "create"
       ? "Nota creada exitosamente"
       : "Nota actualizada exitosamente";
-  formMode.value = "edit";
-  note.id = resultNote.id;
-  note.createdAt = resultNote.createdAt;
+  if (
+    formMode.value === "create" &&
+    permissionSettings.getShowActivityHistory()
+  ) {
+    register("note_created");
+  }
   showToast("success", message);
   closeForm(true);
 }

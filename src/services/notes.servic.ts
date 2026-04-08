@@ -1,13 +1,10 @@
 import { NoteRepository } from "../repositories/note.repository";
 import { CollectionRepository } from "../repositories/collection.repository";
-import { useActionEventStore } from "../stores/useActionEventStore";
-import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
 import type { PaginatedResult } from "../types/paginated.result";
 import type { Note } from "../models/note";
 import type { ResultPattern } from "../types/result.pattern";
 import type { GetAllOptsNotes } from "../repositories/note.repository";
 import { ok, error, handleErrorMsg } from "../utils/error.helpers";
-
 export class NoteService {
   private static async updateCollectionSize(collectionId: number) {
     if (!collectionId) return;
@@ -35,11 +32,6 @@ export class NoteService {
       if (!foundCollection) throw new Error("La colección no existe");
       const result = await NoteRepository.create(note);
       await this.updateCollectionSize(collection);
-      const { register } = useActionEventStore();
-      const permissionSettings = usePermissionSettingsStore();
-      if (permissionSettings.getShowActivityHistory()) {
-        register("note_created");
-      }
       return ok(result);
     } catch (err) {
       console.error(err);
@@ -115,11 +107,6 @@ export class NoteService {
       collection.hasDeletedNotes = true;
       await CollectionRepository.update(collection);
       await this.updateCollectionSize(note.collectionId);
-      const { register } = useActionEventStore();
-      const permissionSettings = usePermissionSettingsStore();
-      if (permissionSettings.getShowActivityHistory()) {
-        register("note_soft_deleted");
-      }
       return ok();
     } catch (err) {
       console.error(err);
@@ -135,11 +122,6 @@ export class NoteService {
       if (!note) throw new Error("La nota no existe");
       await NoteRepository.permanentDelete(id);
       await this.updateCollectionSize(note.collectionId);
-      const { register } = useActionEventStore();
-      const permissionSettings = usePermissionSettingsStore();
-      if (permissionSettings.getShowActivityHistory()) {
-        register("note_hard_deleted");
-      }
       return ok();
     } catch (err) {
       console.error(err);
@@ -241,8 +223,6 @@ export class NoteService {
       await NoteRepository.update(note);
       await this.updateCollectionSize(previousCollectionId);
       await this.updateCollectionSize(collectionId);
-      const { register } = useActionEventStore();
-      register("note_moved");
       return ok();
     } catch (err) {
       console.error(err);
