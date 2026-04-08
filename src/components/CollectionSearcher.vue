@@ -106,16 +106,12 @@ watch(
     }
     if (newSearch && newSearch.trim().length > 0) {
       const fetchResult = await fetchData(newSearch);
-      const forbiddenIds = [2]; // Corresponds to temporary notes collection
       if (!fetchResult.success) {
         toastStore.showToast("error", fetchResult.error);
         resultList.value = [];
         return;
       }
       let collections = fetchResult.data?.data || [];
-      collections = collections.filter(
-        (coll) => !forbiddenIds.includes(coll.id!),
-      );
       resultList.value = collections;
       idleState.value = false;
     }

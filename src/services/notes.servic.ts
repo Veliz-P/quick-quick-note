@@ -225,6 +225,18 @@ export class NoteService {
       const collection = await CollectionRepository.get(collectionId);
       if (!collection) throw new Error("Colección no encontrada");
       const previousCollectionId = note.collectionId;
+      // When moving a note from the temporary notes collection to another collection
+      if (note.collectionId === 2) {
+        note.expiresAt = undefined;
+      }
+      // When moving a note from another collection to the temporary notes collection
+      // By default the note will expire the next day
+      if (collectionId === 2) {
+        const now = new Date();
+        now.setDate(now.getDate() + 1);
+        now.setHours(23, 59, 59);
+        note.expiresAt = now.toISOString();
+      }
       note.collectionId = collectionId;
       await NoteRepository.update(note);
       await this.updateCollectionSize(previousCollectionId);
