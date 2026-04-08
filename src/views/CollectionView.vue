@@ -70,7 +70,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, watch, onBeforeMount, computed } from "vue";
+import { ref, watch, onBeforeMount, computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import CollectionList from "../components/CollectionList.vue";
 import NoteBoard from "../components/NoteBoard.vue";
@@ -80,11 +80,14 @@ import { useRoute } from "vue-router";
 import type { Collection } from "../models/collection";
 import type { NoteFormStoreOptions } from "../types/note.form.options";
 import { CollectionService } from "../services/collection.servic";
+import { NoteService } from "../services/notes.servic";
+import { useToastStore } from "../stores/useToastStore";
 
 const trash = ref(false);
 const currentCollection = ref<Collection | null>(null);
 const collectionsLength = ref(0);
 const { openForm } = useNoteFormStore();
+const { showToast } = useToastStore();
 const { shouldReload } = storeToRefs(useNoteFormStore());
 const route = useRoute();
 
@@ -131,10 +134,12 @@ watch(
 );
 onBeforeMount(() => {
   trash.value = route.query.trash === "true" ? true : false;
-
-  console.log(trash.value);
-  console.log(currentCollection.value);
-  console.log(collectionsLength.value);
+});
+onMounted(async () => {
+  const cleaningResult = await NoteService.clearExpiredNotes();
+  if (!cleaningResult.success) {
+    showToast("error", cleaningResult.error);
+  }
 });
 </script>
 

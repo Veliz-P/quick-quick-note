@@ -23,6 +23,7 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeMount } from "vue";
 import Sidebar from "../components/Sidebar.vue";
 import ToastNotification from "../components/ToastNotification.vue";
 import ConfirmationPopup from "../components/ConfirmationPopup.vue";
@@ -32,12 +33,41 @@ import { useToastStore } from "../stores/useToastStore";
 import { storeToRefs } from "pinia";
 import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
 import { useNoteFormStore } from "../stores/useNoteFormStore";
+import { NoteService } from "../services/notes.servic";
+import { CollectionService } from "../services/collection.servic";
+import { useRecycleBinSettings } from "../stores/useRecycleBinSettings";
 
 const { isOpen: isNoteFormOpen } = storeToRefs(useNoteFormStore());
 const { isOpen: isConfirmationDialogOpen } = storeToRefs(
   useConfirmationDialogStore(),
 );
 const { toastMessage, toastType, showingToast } = storeToRefs(useToastStore());
+const { showToast } = useToastStore();
+const recyclingBinSettings = useRecycleBinSettings();
+
+async function clearRecycleBin() {
+  const recyclingBinDuration = recyclingBinSettings.getRecycleBinDuration();
+  const noteDeletionResult =
+    await NoteService.cleanDeletedRecords(recyclingBinDuration);
+  const collectionDeletionResult =
+    await CollectionService.cleanDeletedCollections(recyclingBinDuration);
+  if (!noteDeletionResult.success || !collectionDeletionResult.success) {
+    showToast("error", "Ocurrio un error al limpiar la papelera");
+    return;
+  }
+  const deletedNotes = noteDeletionResult.data || 0;
+  const deletedCollections = collectionDeletionResult.data || 0;
+  if (deletedNotes > 0 || deletedCollections > 0) {
+    showToast(
+      "success",
+      `${deletedNotes} notas y ${deletedCollections} colecciones borradas de la papelera.`,
+    );
+  }
+}
+
+onBeforeMount(async () => {
+  await clearRecycleBin();
+});
 </script>
 
 <style scoped>

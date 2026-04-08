@@ -6,4 +6,5 @@ export interface Collection {
   hasDeletedNotes: boolean;
   currentSize: number;
   maxSize: number;
+  deletedAt?: string | null;
 }

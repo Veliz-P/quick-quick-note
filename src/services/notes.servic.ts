@@ -241,4 +241,20 @@ export class NoteService {
       return error(message);
     }
   }
+
+  static async cleanDeletedRecords(
+    recyclingBinDurationDays: number,
+  ): Promise<ResultPattern<number>> {
+    try {
+      if (!recyclingBinDurationDays || recyclingBinDurationDays <= 0)
+        throw new Error("Duración de papelera inválida");
+      const deletedCount = await NoteRepository.cleanDeletedRecords(
+        recyclingBinDurationDays,
+      );
+      return ok(deletedCount);
+    } catch (err) {
+      const errMsg = handleErrorMsg(err, "Error al limpiar papelera");
+      return error(errMsg);
+    }
+  }
 }

@@ -87,6 +87,7 @@ export class NoteRepository {
     const note = await this.get(id);
     if (!note) throw new Error("Note not found");
     note.isDeleted = true;
+    note.deletedAt = new Date().toISOString();
     await this.update(note);
   }
 
@@ -99,6 +100,7 @@ export class NoteRepository {
 
   static async restore(note: Note) {
     note.isDeleted = false;
+    note.deletedAt = null;
     await this.update(note);
   }
 
@@ -145,5 +147,37 @@ export class NoteRepository {
       cursor = await cursor.continue();
     }
     await tx.done;
+  }
+
+  private static shouldBeRecycled(
+    note: Note,
+    recyclingBinDurationDays: number,
+  ) {
+    const deletedAt = new Date(note.deletedAt!);
+    let deleteAt = new Date(deletedAt);
+    deleteAt.setDate(deleteAt.getDate() + recyclingBinDurationDays);
+    return new Date().getTime() >= deleteAt.getTime();
+  }
+
+  static async cleanDeletedRecords(recyclingBinDurationDays: number) {
+    const db = await dbPromise;
+    const tx = db.transaction(stores.NOTES, "readwrite");
+    const store = tx.objectStore(stores.NOTES);
+    let cursor = await store.openCursor();
+    let count = 0;
+    while (cursor) {
+      const note = cursor.value as Note;
+      const shouldBeRecycled = this.shouldBeRecycled(
+        note,
+        recyclingBinDurationDays,
+      );
+      if (note.isDeleted && note.deletedAt && shouldBeRecycled) {
+        await store.delete(note.id!);
+        count++;
+      }
+      cursor = await cursor.continue();
+    }
+    await tx.done;
+    return count;
   }
 }

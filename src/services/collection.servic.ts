@@ -179,4 +179,20 @@ export class CollectionService {
       return error(message);
     }
   }
+
+  static async cleanDeletedCollections(
+    recyclingBinDurationDays: number,
+  ): Promise<ResultPattern<number>> {
+    try {
+      if (!recyclingBinDurationDays || recyclingBinDurationDays <= 0)
+        throw new Error("Duración de papelera inválida");
+      const deletedCount = await CollectionRepository.cleanDeletedCollections(
+        recyclingBinDurationDays,
+      );
+      return ok(deletedCount);
+    } catch (err) {
+      const errMsg = handleErrorMsg(err, "Error al limpiar papelera");
+      return error(errMsg);
+    }
+  }
 }

@@ -6,4 +6,5 @@ export interface Note {
   createdAt: string;
   expiresAt?: string;
   isDeleted: boolean;
+  deletedAt?: string | null;
 }

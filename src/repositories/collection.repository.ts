@@ -181,6 +181,7 @@ export class CollectionRepository {
     const timestamp = new Date().toISOString();
     collectionDetail.name = `${collectionDetail.name}:deleted:${timestamp}`;
     collectionDetail.isDeleted = true;
+    collectionDetail.deletedAt = new Date().toISOString();
     await this.update(collectionDetail);
     const db = await dbPromise;
     const tx = db.transaction(stores.NOTES, "readwrite");
@@ -225,7 +226,40 @@ export class CollectionRepository {
   static async restore(collection: Collection): Promise<Collection> {
     collection.isDeleted = false;
     collection.name = collection.name.split(":")[0] || collection.name;
+    collection.deletedAt = null;
     const restoredCollection = await this.update(collection);
     return restoredCollection;
+  }
+
+  private static shouldBeRecycled(
+    collection: Collection,
+    recyclingBinDurationDays: number,
+  ) {
+    const deletedAt = new Date(collection.deletedAt!);
+    let deleteAt = new Date(deletedAt);
+    deleteAt.setDate(deleteAt.getDate() + recyclingBinDurationDays);
+    return new Date().getTime() >= deleteAt.getTime();
+  }
+
+  static async cleanDeletedCollections(recyclingBinDurationDays: number) {
+    const db = await dbPromise;
+    const tx = db.transaction(stores.COLLECTIONS, "readwrite");
+    const store = tx.objectStore(stores.COLLECTIONS);
+    let cursor = await store.openCursor();
+    let count = 0;
+    while (cursor) {
+      const collection = cursor.value as Collection;
+      const shouldBeRecycled = this.shouldBeRecycled(
+        collection,
+        recyclingBinDurationDays,
+      );
+      if (collection.isDeleted && shouldBeRecycled) {
+        await store.delete(collection.id!);
+        count++;
+      }
+      cursor = await cursor.continue();
+    }
+    await tx.done;
+    return count;
   }
 }
