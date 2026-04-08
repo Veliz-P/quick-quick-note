@@ -214,3 +214,23 @@ form {
   flex-direction: column;
   gap: var(--space-6);
 }
+
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--primary-400);
+  border-radius: var(--rounded-xl);
+  transition: background-color 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-500);
+  cursor: pointer;
+}
