@@ -107,11 +107,15 @@ import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore
 const { confirm } = useConfirmationDialogStore();
 import type { ConfirmationDialogOptions } from "../types/confirmation.options";
 import { useToastStore } from "../stores/useToastStore";
+import { useActionEventStore } from "../stores/useActionEventStore";
+import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
 import type { FormMode } from "../types/form.mode";
 import type { ResultPattern } from "../types/result.pattern";
 import type { GetAllOptsCollections } from "../repositories/collection.repository";
+import type { ActionEventType } from "../types/action.event";
 const { showToast } = useToastStore();
-
+const { register } = useActionEventStore();
+const permissionSettings = usePermissionSettingsStore();
 interface Props {
   trash?: boolean;
 }
@@ -201,20 +205,26 @@ async function deleteCollection() {
   }
   let deletionResult: ResultPattern<void>;
   let msg = "";
+  let actionEventType: ActionEventType;
   if (!deletePermanently.value) {
     deletionResult =
       await CollectionService.softDeleteCollection(deleteCollectionId);
     msg = "Colección movida a papelera";
+    actionEventType = "collection_soft_deleted";
   } else {
     const ok = await confirm(permanentDeleteOpts);
     if (!ok) return;
     deletionResult =
       await CollectionService.deleteCollection(deleteCollectionId);
     msg = "Colección borrada permanentemente";
+    actionEventType = "collection_hard_deleted";
   }
   if (!deletionResult.success) {
     showToast("error", "Ocurrió un error al borrar la colección");
     return;
+  }
+  if (permissionSettings.getShowActivityHistory()) {
+    register(actionEventType);
   }
   showToast("success", msg);
   removeCollectionNode();
@@ -343,7 +353,6 @@ onMounted(async () => {
   border: 2px solid var(--border);
   padding: var(--space-8) var(--space-3);
   border-radius: var(--rounded-md);
-  text-transform: capitalize;
   display: flex;
   flex-direction: column;
   align-items: center;

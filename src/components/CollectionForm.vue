@@ -36,8 +36,12 @@ import { ref, watch, reactive, onMounted, toRaw } from "vue";
 import { debounce } from "../utils/debounce";
 import { useToastStore } from "../stores/useToastStore";
 import { useCollectionSettings } from "../stores/useCollectionSettings";
+import { useActionEventStore } from "../stores/useActionEventStore";
+import { usePermissionSettingsStore } from "../stores/usePermissionSettings";
 const { showToast } = useToastStore();
 const collectionSettings = useCollectionSettings();
+const { register } = useActionEventStore();
+const permissionSettings = usePermissionSettingsStore();
 import type { FormMode } from "../types/form.mode";
 import type { Collection } from "../models/collection";
 import type { ResultPattern } from "../types/result.pattern";
@@ -119,8 +123,13 @@ async function submitForm() {
     showToast("error", result.error);
     return;
   }
+  if (
+    permissionSettings.getShowActivityHistory() &&
+    props.formMode == "create"
+  ) {
+    register("collection_created");
+  }
   showToast("success", msg);
-
   if (props.formMode == "create") {
     emit("shouldReload");
   } else if (props.formMode == "edit") {
