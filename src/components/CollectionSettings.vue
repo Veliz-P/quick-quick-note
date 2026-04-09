@@ -36,7 +36,7 @@
 </template>
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
-import { Folder } from "lucide-vue-next";
+import { Folder, RotateCcw } from "lucide-vue-next";
 import { debounce } from "../utils/debounce";
 import { useCollectionSettings } from "../stores/useCollectionSettings";
 const collectionSettings = useCollectionSettings();

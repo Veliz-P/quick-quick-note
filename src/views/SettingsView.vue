@@ -8,29 +8,44 @@
     <section id="settings">
       <nav>
         <ul id="settings-menu">
-          <li>
+          <li @click="scrollToSection('theme-settings')">
             <Palette class="setting-icon" :stroke-width="1.5" /> Apariencia
           </li>
-          <li><Lock class="setting-icon" :stroke-width="1.5" /> Permisos</li>
-          <li>
+          <li @click="scrollToSection('permission-settings')">
+            <Lock class="setting-icon" :stroke-width="1.5" />
+            Permisos
+          </li>
+          <li @click="scrollToSection('note-settings')">
             <NotepadText class="setting-icon" :stroke-width="1.5" /> Notas
           </li>
-          <li>
+          <li @click="scrollToSection('collection-settings')">
             <Folder class="setting-icon" :stroke-width="1.5" /> Colecciones
           </li>
-          <li>
+          <li @click="scrollToSection('danger-zone-settings')">
             <AlertTriangle class="setting-icon" :stroke-width="1.5" /> Zona de
             peligro
           </li>
         </ul>
       </nav>
       <section id="settings-content">
-        <ThemesSettingsSection v-model:reload-settings="reloadSettings" />
-        <PermissionsSettings v-model:reload-settings="reloadSettings" />
-        <NoteSettings v-model:reload-settings="reloadSettings" />
-        <CollectionSettings v-model:reload-settings="reloadSettings" />
-        <RecyclingBinSettings v-model:reload-settings="reloadSettings" />
-        <DangerZoneSettings @reload-settings="requestSettingsReload" />
+        <div id="theme-settings">
+          <ThemesSettingsSection v-model:reload-settings="reloadSettings" />
+        </div>
+        <div id="permission-settings">
+          <PermissionsSettings v-model:reload-settings="reloadSettings" />
+        </div>
+        <div id="note-settings">
+          <NoteSettings v-model:reload-settings="reloadSettings" />
+        </div>
+        <div id="collection-settings">
+          <CollectionSettings v-model:reload-settings="reloadSettings" />
+        </div>
+        <div id="recycling-bin-settings">
+          <RecyclingBinSettings v-model:reload-settings="reloadSettings" />
+        </div>
+        <div id="danger-zone-settings">
+          <DangerZoneSettings @reload-settings="requestSettingsReload" />
+        </div>
       </section>
     </section>
   </div>
@@ -58,6 +73,15 @@ function requestSettingsReload() {
   setTimeout(() => {
     reloadSettings.value = false;
   }, 50);
+}
+
+function scrollToSection(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
 }
 </script>
 

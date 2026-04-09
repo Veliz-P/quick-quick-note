@@ -44,7 +44,7 @@
 </template>
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
-import { Trash } from "lucide-vue-next";
+import { Trash, RotateCcw } from "lucide-vue-next";
 import { useRecycleBinSettings } from "../stores/useRecycleBinSettings";
 import { useConfirmationDialogStore } from "../stores/useConfirmationDialogStore";
 import { debounce } from "../utils/debounce";
